@@ -110,11 +110,22 @@ def validate_coffee_reading(record):
     timestamp = record.get('timestamp')
     if not isinstance(timestamp, str) or not timestamp.strip():
         errors.append('"timestamp" cannot be empty')
+    else:
+        try:
+            if timestamp.endswith('Z'):
+                timestamp = timestamp[:-1] + '+00:00'
+            __import__('datetime').datetime.fromisoformat(timestamp)
+        except (TypeError, ValueError):
+            errors.append('"timestamp" must be a valid ISO-8601 datetime')
 
     for field_name in ('Temp_Max', 'Temp_Min', 'Humidity', 'Solar_Radiation',
                        'Precipitation_mm', 'soil_ph'):
         value = _as_float(record.get(field_name))
         if value is None:
+            errors.append(f'Field "{field_name}" must be numeric')
+
+    for field_name in ('soil_moisture', 'soil_moisture_pct'):
+        if field_name in record and _as_float(record.get(field_name)) is None:
             errors.append(f'Field "{field_name}" must be numeric')
 
     nutrients = record.get('nutrients_mg_kg')
