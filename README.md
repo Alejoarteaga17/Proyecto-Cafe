@@ -25,13 +25,13 @@ El proyecto sigue un enfoque de data engineering aplicado: validación, limpieza
 
 El flujo batch ingresa datasets históricos (CSV/Kaggle) mediante un endpoint REST en API Gateway. La validación inicial exige las 19 columnas del dataset de café, aplica imputación cuando faltan valores como `Solar_Radiation` y guarda el resultado en la capa Silver del data lake. Luego una segunda etapa realiza particionado por `YEAR/MM/Location` y produce la capa Gold para análisis y persistencia.
 
-![Batch pipeline](docs/architecture_batch.png)
+
 
 ### Pipeline streaming: sensores de cultivo
 
 Los sensores de cultivo publican mediciones de temperatura, humedad, radiación, pH del suelo y nutrientes vía MQTT. Las lecturas se validan contra reglas agronómicas del café antes de persistirse en MongoDB Atlas. Si un mensaje falla, se envía a una DLQ para revisión operativa y alertas por CloudWatch/SNS.
 
-![Streaming pipeline](docs/architecture_streaming.png)
+
 
 ### Observabilidad
 
