@@ -43,7 +43,7 @@ Resources:
                 Action:
                   - s3:GetObject
                   - s3:DeleteObject
-                Resource: ${self:custom.s3.rawReportsBucket.arn}/uploads/*
+                Resource: ${self:custom.s3.rawReportsBucket.arn}/silver/uploads/*
               - Effect: Allow
                 Action: s3:PutObject
                 Resource:

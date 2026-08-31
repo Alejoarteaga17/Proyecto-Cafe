@@ -13,8 +13,17 @@ def get_collection(secret_name, collection_name):
         secret = json.loads(
             secrets_client.get_secret_value(
                 SecretId=secret_name)['SecretString'])
-        uri = (f"mongodb+srv://{secret['username']}:{secret['password']}"
-               f"@{secret['host']}/?retryWrites=true&w=majority")
+        username = quote_plus(secret['username'])
+        password = quote_plus(secret['password'])
+        host = secret['host'].rstrip()
+        options = 'retryWrites=true&w=majority'
+        if '?' in host:
+            separator = '&' if not host.endswith('?') else ''
+            uri = (f"mongodb+srv://{username}:{password}@{host}"
+                   f"{separator}{options}")
+        else:
+            uri = (f"mongodb+srv://{username}:{password}"
+                   f"@{host}/?{options}")
         _CACHE[secret_name] = {
             'client': MongoClient(uri),
             'dbname': secret['dbname'],
