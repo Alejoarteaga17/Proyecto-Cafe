@@ -1,0 +1,57 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git branch)",
+      "Bash(git branch -a)",
+      "Bash(git branch -av)",
+      "Bash(git branch -v)",
+      "Bash(git branch --list*)",
+      "Bash(git check-ignore*)",
+      "Bash(git diff*)",
+      "Bash(git fetch*)",
+      "Bash(git log*)",
+      "Bash(git show*)",
+      "Bash(git status*)",
+
+      "Bash(docker exec -w /app/infrastructure/serverless/* CoffeeCultivationInfrastructure serverless info*)",
+      "Bash(docker exec -w /app/infrastructure/serverless/* CoffeeCultivationInfrastructure serverless package*)",
+      "Bash(docker exec -w /app/infrastructure/serverless/* CoffeeCultivationInfrastructure serverless print*)",
+      "Bash(docker exec -w /app/backend/serverless* CoffeeCultivationBackend serverless info*)",
+      "Bash(docker exec -w /app/backend/serverless* CoffeeCultivationBackend serverless package*)",
+      "Bash(docker exec -w /app/backend/serverless* CoffeeCultivationBackend serverless print*)",
+
+      "Bash(docker exec CoffeeCultivationBackend aws * describe-*)",
+      "Bash(docker exec CoffeeCultivationBackend aws * get-*)",
+      "Bash(docker exec CoffeeCultivationBackend aws * list-*)",
+      "Bash(docker exec -w * CoffeeCultivationBackend aws * describe-*)",
+      "Bash(docker exec -w * CoffeeCultivationBackend aws * get-*)",
+      "Bash(docker exec -w * CoffeeCultivationBackend aws * list-*)",
+      "Bash(docker exec CoffeeCultivationInfrastructure aws * describe-*)",
+      "Bash(docker exec CoffeeCultivationInfrastructure aws * get-*)",
+      "Bash(docker exec CoffeeCultivationInfrastructure aws * list-*)",
+      "Bash(docker exec -w * CoffeeCultivationInfrastructure aws * describe-*)",
+      "Bash(docker exec -w * CoffeeCultivationInfrastructure aws * get-*)",
+      "Bash(docker exec -w * CoffeeCultivationInfrastructure aws * list-*)",
+
+      "Bash(docker exec CoffeeCultivationBackend cfn-lint*)",
+      "Bash(docker exec -w * CoffeeCultivationBackend cfn-lint*)",
+      "Bash(docker exec CoffeeCultivationInfrastructure cfn-lint*)",
+      "Bash(docker exec -w * CoffeeCultivationInfrastructure cfn-lint*)",
+      "Bash(docker exec CoffeeCultivationBackend pylint*)",
+      "Bash(docker exec -w * CoffeeCultivationBackend pylint*)",
+      "Bash(docker exec CoffeeCultivationBackend bash -c \"pylint*)",
+      "Bash(docker exec -w * CoffeeCultivationBackend bash -c \"pylint*)",
+
+      "Bash(docker exec -w /app/backend CoffeeCultivationBackend npm run format)",
+      "Bash(docker exec -w /app/infrastructure CoffeeCultivationInfrastructure npm run format)",
+      "Bash(docker exec -w /app/docs CoffeeCultivation python3 architecture.py)",
+
+      "Bash(docker exec -w * CoffeeCultivationBackend find*)",
+      "Bash(docker exec -w * CoffeeCultivationInfrastructure find*)",
+      "Bash(docker restart *)",
+
+      "Skill(update-config)",
+      "WebFetch(domain:www.serverless.com)"
+    ]
+  }
+}

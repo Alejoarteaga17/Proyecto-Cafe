@@ -1,0 +1,25 @@
+services:
+  coffee-cultivation-infrastructure:
+    container_name: 'CoffeeCultivationInfrastructure'
+    build:
+      context: .
+      dockerfile: ../../.docker/Dockerfile
+      target: img-infrastructure
+    volumes:
+      - ../..:/app
+      - coffee-cultivation-infrastructure-bashhistory:/commandhistory
+    env_file:
+      - ../../.envs/aws.env
+      - ../../.envs/sls.env
+      - ../.envs/config.env
+    environment:
+      - DEPLOY_APP=coffee-cultivation
+    working_dir: /app/infrastructure
+    restart: unless-stopped
+    command:
+      - /bin/sh
+      - -c
+      - sleep infinity
+
+volumes:
+  coffee-cultivation-infrastructure-bashhistory:
