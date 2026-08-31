@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cultivo de Café Inteligente</title>
+    <style>
+      :root {
+        --bg: #f5f5ee;
+        --panel: #ffffff;
+        --primary: #3b6b3b;
+        --primary-dark: #2d512d;
+        --accent: #d6b056;
+        --text: #1d2a1d;
+        --muted: #5e6b5e;
+        --danger: #b93d3d;
+        --success: #2d7d46;
+        --shadow: rgba(23, 23, 23, 0.08);
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        font-family: Arial, Helvetica, sans-serif;
+        background: linear-gradient(180deg, #f7f4eb 0%, #eef4ed 100%);
+        color: var(--text);
+      }
+
+      .container {
+        max-width: 980px;
+        margin: 40px auto;
+        padding: 0 18px 40px;
+      }
+
+      .card {
+        background: var(--panel);
+        border-radius: 18px;
+        box-shadow: 0 10px 30px var(--shadow);
+        padding: 24px;
+      }
+
+      h1 {
+        margin: 0 0 8px;
+        color: var(--primary-dark);
+      }
+
+      .subtitle {
+        margin: 0 0 28px;
+        color: var(--muted);
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: 1.2fr 0.8fr;
+        gap: 24px;
+      }
+
+      .section-title {
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--primary-dark);
+        margin-bottom: 12px;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+      }
+
+      input[type="file"] {
+        width: 100%;
+        padding: 14px;
+        background: #f8faf8;
+        border: 2px dashed #bdd4bd;
+        border-radius: 10px;
+        cursor: pointer;
+      }
+
+      .button-row {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-top: 18px;
+      }
+
+      button {
+        border: none;
+        border-radius: 10px;
+        padding: 12px 18px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: transform 0.15s ease, opacity 0.15s ease;
+      }
+
+      button:hover { transform: translateY(-1px); }
+      button:disabled { opacity: 0.6; cursor: default; }
+
+      .primary {
+        background: var(--primary);
+        color: white;
+      }
+
+      .secondary {
+        background: #edf2ec;
+        color: var(--text);
+      }
+
+      .status {
+        margin-top: 18px;
+        padding: 12px 14px;
+        border-radius: 10px;
+        font-size: 0.95rem;
+        background: #f8faf8;
+        border: 1px solid #dfeae0;
+        color: var(--text);
+        min-height: 48px;
+      }
+
+      .status.error {
+        background: #fff1f1;
+        border-color: #f0c1c1;
+        color: var(--danger);
+      }
+
+      .status.success {
+        background: #eefaf3;
+        border-color: #cfe8d9;
+        color: var(--success);
+      }
+
+      .json-output {
+        margin-top: 16px;
+        padding: 14px;
+        border-radius: 12px;
+        background: #111827;
+        color: #e5e7eb;
+        font-size: 0.83rem;
+        overflow: auto;
+        white-space: pre-wrap;
+        min-height: 190px;
+      }
+
+      .future-box {
+        border: 1px solid #e7e7d8;
+        background: #faf9f2;
+        border-radius: 12px;
+        padding: 16px;
+        margin-top: 16px;
+      }
+
+      .future-box h3 {
+        margin-top: 0;
+      }
+
+      .future-box p {
+        color: var(--muted);
+        margin-bottom: 0;
+      }
+
+      @media (max-width: 760px) {
+        .grid { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="card">
+        <h1>Cultivo de Café Inteligente</h1>
+        <p class="subtitle">Carga histórica del dataset y envío al pipeline batch.</p>
+
+        <div class="grid">
+          <section>
+            <div class="section-title">Carga del CSV</div>
+
+            <label for="csvFile">Selecciona el archivo CSV</label>
+            <input id="csvFile" type="file" accept=".csv,text/csv" />
+
+            <div class="button-row">
+              <button class="primary" id="uploadBtn">Enviar al backend</button>
+              <button class="secondary" id="resetBtn" type="button">Limpiar</button>
+            </div>
+
+            <div id="status" class="status">Sin archivo cargado.</div>
+
+            <pre id="responseOutput" class="json-output">{ "mensaje": "Esperando respuesta del API..." }</pre>
+          </section>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const API_URL = 'https://<api-id>.execute-api.us-east-1.amazonaws.com/dev/coffee-historical-data';
+      const API_KEY = 'COLOCA_AQUI_LA_API_KEY_GENERADA_POR_EL_BACKEND';
+
+      const fileInput = document.getElementById('csvFile');
+      const uploadBtn = document.getElementById('uploadBtn');
+      const resetBtn = document.getElementById('resetBtn');
+      const statusBox = document.getElementById('status');
+      const responseOutput = document.getElementById('responseOutput');
+
+      function setStatus(message, type = '') {
+        statusBox.textContent = message;
+        statusBox.className = `status ${type}`.trim();
+      }
+
+      function fileToBase64(file) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const result = reader.result;
+            const base64 = typeof result === 'string'
+              ? result.split(',')[1]
+              : '';
+            if (!base64) {
+              reject(new Error('No se pudo convertir el archivo a base64.'));
+              return;
+            }
+            resolve(base64);
+          };
+          reader.onerror = () => reject(new Error('Error leyendo el archivo.'));
+          reader.readAsDataURL(file);
+        });
+      }
+
+      async function sendCsvToApi() {
+        const file = fileInput.files[0];
+
+        if (!file) {
+          setStatus('Debes seleccionar un archivo CSV antes de continuar.', 'error');
+          return;
+        }
+
+        if (!file.name.toLowerCase().endsWith('.csv')) {
+          setStatus('El archivo seleccionado no es un CSV válido.', 'error');
+          return;
+        }
+
+        uploadBtn.disabled = true;
+        setStatus('Convirtiendo CSV a base64 y enviando la petición...', '');
+
+        try {
+          const base64File = await fileToBase64(file);
+
+          const payload = {
+            file: base64File,
+          };
+
+          const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-api-key': API_KEY,
+            },
+            body: JSON.stringify(payload),
+          });
+
+          const result = await response.text();
+          let parsedResult;
+          try {
+            parsedResult = JSON.parse(result);
+          } catch (error) {
+            parsedResult = { raw: result };
+          }
+
+          responseOutput.textContent = JSON.stringify({
+            status: response.status,
+            ok: response.ok,
+            body: parsedResult,
+          }, null, 2);
+
+          if (!response.ok) {
+            setStatus(`La API respondió con error HTTP ${response.status}.`, 'error');
+            return;
+          }
+
+          setStatus('Archivo enviado correctamente al pipeline batch.', 'success');
+        } catch (error) {
+          responseOutput.textContent = JSON.stringify({
+            error: error.message,
+          }, null, 2);
+          setStatus(error.message || 'No se pudo enviar el archivo.', 'error');
+        } finally {
+          uploadBtn.disabled = false;
+        }
+      }
+
+      uploadBtn.addEventListener('click', sendCsvToApi);
+
+      resetBtn.addEventListener('click', () => {
+        fileInput.value = '';
+        responseOutput.textContent = '{ "mensaje": "Esperando respuesta del API..." }';
+        setStatus('Sin archivo cargado.');
+      });
+    </script>
+  </body>
+</html>

@@ -145,7 +145,18 @@ def validate_coffee_reading(record):
 
 def build_alert_summary(record):
     warnings = evaluate_coffee_alerts(record)
+    if not warnings:
+        return {
+            'status': 'ok',
+            'warnings': [],
+        }
+
+    critical = any(
+        'crítico' in warning.lower() or 'bajo:' in warning.lower()
+        for warning in warnings
+    )
+    status = 'critical' if critical or len(warnings) > 2 else 'suspicious'
     return {
-        'status': 'alert' if warnings else 'ok',
+        'status': status,
         'warnings': warnings,
     }

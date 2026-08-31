@@ -8,18 +8,18 @@ from src.common.mongo import get_collection
 
 DEPLOY_APP = os.environ['DEPLOY_APP']
 MONGO_CREDENTIALS_SECRET_NAME = f'/{DEPLOY_APP}-secrets/MongoCredentials'
-INDEX = [('sensor_id', ASCENDING), ('timestamp', DESCENDING)]
+INDEX = [('source.device_id', ASCENDING), ('temporal.date', DESCENDING)]
 
 
 class Migration(BaseMigration):
-    """Speeds up sensor telemetry queries by sensor and time."""
+    """Speeds up streaming telemetry queries by device and date."""
 
     def upgrade(self):
         get_collection(MONGO_CREDENTIALS_SECRET_NAME,
-                       'coffeeSensorReadings').create_index(INDEX)
-        print('Created sensor_id+timestamp index on coffeeSensorReadings.')
+                       'coffee_measurements').create_index(INDEX)
+        print('Created device+date index on coffee_measurements.')
 
     def downgrade(self):
         get_collection(MONGO_CREDENTIALS_SECRET_NAME,
-                       'coffeeSensorReadings').drop_index(INDEX)
-        print('Dropped sensor_id+timestamp index on coffeeSensorReadings.')
+                       'coffee_measurements').drop_index(INDEX)
+        print('Dropped device+date index on coffee_measurements.')

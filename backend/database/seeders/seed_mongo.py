@@ -14,8 +14,7 @@ from src.common.mongo import get_collection
 
 DEPLOY_APP = os.environ['DEPLOY_APP']
 MONGO_CREDENTIALS_SECRET_NAME = f'/{DEPLOY_APP}-secrets/MongoCredentials'
-HISTORICAL_DATA_COLLECTION = 'coffeeHistoricalData'
-SENSOR_READINGS_COLLECTION = 'coffeeSensorReadings'
+MEASUREMENTS_COLLECTION = 'coffee_measurements'
 # A single insert_many() with tens of thousands of documents can outlast what
 # an Atlas M0 (free tier) connection tolerates and gets dropped mid-request
 # (pymongo.errors.AutoReconnect: connection closed). Batching avoids that and
@@ -131,7 +130,7 @@ def _insert_in_batches(collection, documents):
 
 def seed_historical_data(count):
     collection = get_collection(MONGO_CREDENTIALS_SECRET_NAME,
-                                HISTORICAL_DATA_COLLECTION)
+                                MEASUREMENTS_COLLECTION)
     documents = (_build_historical_record(i) for i in range(count))
     return _insert_in_batches(collection, documents)
 
@@ -139,7 +138,7 @@ def seed_historical_data(count):
 def seed_sensor_readings(count, sensor_count):
     sensor_ids = [f'sensor-{i:03d}' for i in range(1, sensor_count + 1)]
     collection = get_collection(MONGO_CREDENTIALS_SECRET_NAME,
-                                SENSOR_READINGS_COLLECTION)
+                                MEASUREMENTS_COLLECTION)
     documents = (_build_sensor_reading(random.choice(sensor_ids),
                                        random.choice(list(COFFEE_LOCATIONS)))
                  for _ in range(count))
@@ -158,18 +157,17 @@ def main():
     args = parser.parse_args()
 
     if args.reset:
-        for name in (HISTORICAL_DATA_COLLECTION, SENSOR_READINGS_COLLECTION):
-            deleted = get_collection(MONGO_CREDENTIALS_SECRET_NAME,
-                                     name).delete_many({}).deleted_count
-            print(f'Deleted {deleted} existing documents from {name}.')
+        deleted = get_collection(MONGO_CREDENTIALS_SECRET_NAME,
+                                 MEASUREMENTS_COLLECTION).delete_many({}).deleted_count
+        print(f'Deleted {deleted} existing documents from {MEASUREMENTS_COLLECTION}.')
 
     reports_inserted = seed_historical_data(args.historical_data)
     readings_inserted = seed_sensor_readings(args.sensor_readings, args.sensors)
 
     print(f'Inserted {reports_inserted} documents into '
-          f'{HISTORICAL_DATA_COLLECTION}.')
+          f'{MEASUREMENTS_COLLECTION}.')
     print(f'Inserted {readings_inserted} documents into '
-          f'{SENSOR_READINGS_COLLECTION} across {args.sensors} sensors.')
+          f'{MEASUREMENTS_COLLECTION} across {args.sensors} sensors.')
 
 
 if __name__ == '__main__':

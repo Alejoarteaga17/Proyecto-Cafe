@@ -6,13 +6,14 @@ import boto3
 
 from src.common import mongo
 from src.common.coffee_batch_validator import BatchValidationError, validate_row
+from src.common.coffee_measurement_model import build_batch_measurement
 
 sqs_client = boto3.client('sqs')
 
 MONGO_CREDENTIALS_SECRET_NAME = os.environ['MONGO_CREDENTIALS_SECRET_NAME']
 COFFEE_BATCH_DLQ_URL = os.environ['COFFEE_BATCH_DLQ_URL']
 
-MONGO_COLLECTION_NAME = 'coffeeHistoricalData'
+MONGO_COLLECTION_NAME = 'coffee_measurements'
 
 
 def handler(event, context):
@@ -28,8 +29,18 @@ def _process_record(record):
         _send_to_dlq(row, error.errors)
         return
 
+    document = build_batch_measurement(row)
+    document['source'] = {
+        'type': 'batch',
+        'dataset': 'Coffee_Data_Set.csv',
+        's3_key': row.get('source_s3_key'),
+    }
+    document['row_metadata'] = {
+        'row_number': row.get('row_number'),
+        'source_s3_key': row.get('source_s3_key'),
+    }
+
     now = dt.datetime.now(dt.timezone.utc).isoformat()
-    document = dict(row)
     document['created_at'] = now
     document['updated_at'] = now
 

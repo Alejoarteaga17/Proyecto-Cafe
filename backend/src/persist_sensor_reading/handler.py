@@ -5,6 +5,7 @@ import os
 import boto3
 
 from src.common import mongo
+from src.common.coffee_measurement_model import build_sensor_measurement
 from src.common.coffee_rules import build_alert_summary, validate_coffee_reading
 
 sqs_client = boto3.client('sqs')
@@ -12,7 +13,7 @@ sqs_client = boto3.client('sqs')
 MONGO_CREDENTIALS_SECRET_NAME = os.getenv('MONGO_CREDENTIALS_SECRET_NAME')
 SENSOR_READINGS_DLQ_URL = os.getenv('SENSOR_READINGS_DLQ_URL')
 
-MONGO_COLLECTION_NAME = 'coffeeSensorReadings'
+MONGO_COLLECTION_NAME = 'coffee_measurements'
 
 
 class PayloadValidationError(ValueError):
@@ -34,23 +35,18 @@ def _process_record(record):
         )
 
     alert_summary = build_alert_summary(reading)
-    validation_status = {
-        'status': 'ok',
+    document = build_sensor_measurement(reading, alert_summary)
+    document['validation'] = {
+        'status': alert_summary['status'],
         'errors': [],
         'warnings': alert_summary.get('warnings', []),
     }
-    if alert_summary['status'] == 'alert':
-        reading['alert_summary'] = alert_summary
-        validation_status['status'] = 'alert'
-        validation_status['warnings'] = alert_summary.get('warnings', [])
+    document['is_alert'] = alert_summary['status'] != 'ok'
+    document['alert_summary'] = alert_summary
 
     now = dt.datetime.now(dt.timezone.utc).isoformat()
-    document = dict(reading)
-    document['validation'] = validation_status
-    document['is_alert'] = alert_summary['status'] == 'alert'
     document['created_at'] = now
     document['updated_at'] = now
-    document['source'] = 'iot_sensor'
 
     collection = mongo.get_collection(MONGO_CREDENTIALS_SECRET_NAME,
                                       MONGO_COLLECTION_NAME)

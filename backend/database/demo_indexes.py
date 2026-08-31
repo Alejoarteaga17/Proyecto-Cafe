@@ -31,28 +31,25 @@ MIGRATE_SH = os.path.join(os.path.dirname(__file__), 'migrations', 'migrate.sh')
 # to that point otherwise, not just the single migration in question).
 DEMOS = [
     {
-        'collection':
-            'coffeeHistoricalData',
-        'timestamp':
-            '20260829000000',
-        'index_fields': ('location', 'Date'),
+        'collection': 'coffee_measurements',
+        'timestamp': '20260829000000',
+        'index_fields': ('location.country', 'temporal.date'),
         'query': {
-            'location': 'Lote_Norte_Arabica',
-            'Date': {
+            'location.country': 'Colombia',
+            'temporal.date': {
                 '$gte': (dt.datetime.now() - dt.timedelta(days=30)).isoformat(),
             },
         },
-        'description':
-            'coffeeHistoricalData: location="Lote_Norte_Arabica" AND Date >= last 30 days',
+        'description': 'coffee_measurements: location.country="Colombia" AND temporal.date >= last 30 days',
     },
     {
-        'collection': 'coffeeSensorReadings',
+        'collection': 'coffee_measurements',
         'timestamp': '20260829000001',
-        'index_fields': ('sensor_id', 'timestamp'),
+        'index_fields': ('source.device_id', 'temporal.date'),
         'query': {
-            'sensor_id': 'sensor-001',
+            'source.device_id': 'sensor-001',
         },
-        'description': 'coffeeSensorReadings: sensor_id="sensor-001"',
+        'description': 'coffee_measurements: source.device_id="sensor-001"',
     },
 ]
 
