@@ -37,7 +37,7 @@ SplitAndEnqueue:
         bucket: ${self:custom.s3.rawReportsBucket.name}
         event: s3:ObjectCreated:*
         rules:
-          - prefix: uploads/
+          - prefix: silver/uploads/
         existing: true
 
 ValidateAndPersist:

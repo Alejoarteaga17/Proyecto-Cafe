@@ -12,11 +12,11 @@ Esta guía explica cómo configurar el entorno Dockerizado para trabajar en el p
 
 El proyecto contiene 3 contenedores principales:
 
-| Contenedor | Propósito | Directorio |
-|---|---|---|
-| `CoffeeCultivation` | Monorepo-level tooling (diagramas de arquitectura) | `.docker/` |
-| `CoffeeCultivationBackend` | Lambdas y stacks Serverless del backend | `backend/.docker/` |
-| `CoffeeCultivationInfrastructure` | Recursos compartidos de AWS | `infrastructure/.docker/` |
+| Contenedor                        | Propósito                                          | Directorio                |
+| --------------------------------- | -------------------------------------------------- | ------------------------- |
+| `CoffeeCultivation`               | Monorepo-level tooling (diagramas de arquitectura) | `.docker/`                |
+| `CoffeeCultivationBackend`        | Lambdas y stacks Serverless del backend            | `backend/.docker/`        |
+| `CoffeeCultivationInfrastructure` | Recursos compartidos de AWS                        | `infrastructure/.docker/` |
 
 ## Configuración inicial
 
@@ -149,8 +149,9 @@ docker exec -w /app/backend CoffeeCultivationBackend python3 -m compileall src/
 # Ejecutar linter
 docker exec -w /app/backend CoffeeCultivationBackend cfn-lint serverless/batch/serverless.yml
 
-# Desplegar un stack
-docker exec -w /app/backend/serverless/layers CoffeeCultivationBackend serverless deploy --stage dev
+# Verificar que Serverless funciona dentro del contenedor
+# (si falla por permisos, usa la corrección del Troubleshooting más abajo)
+docker exec CoffeeCultivationBackend sh -lc 'serverless --version'
 
 # Ver logs de CloudWatch
 docker exec CoffeeCultivationBackend aws logs tail /aws/lambda/coffee-cultivation-backend-ValidateAndStore --follow
@@ -162,6 +163,8 @@ docker exec CoffeeCultivationBackend aws logs tail /aws/lambda/coffee-cultivatio
 # Validar CloudFormation
 docker exec -w /app/infrastructure CoffeeCultivationInfrastructure cfn-lint serverless/storage/serverless.yml
 
+
+
 # Desplegar storage
 docker exec -w /app/infrastructure/serverless/storage CoffeeCultivationInfrastructure serverless deploy --stage dev
 
@@ -169,12 +172,223 @@ docker exec -w /app/infrastructure/serverless/storage CoffeeCultivationInfrastru
 docker exec CoffeeCultivationInfrastructure aws ssm describe-parameters --filters Key=Name,Values=coffee-cultivation-queue
 ```
 
+### Flujo de despliegue recomendado
+
+Los archivos `.env` no se cargan automáticamente por ejecutar `serverless` desde una carpeta. El `docker-compose.yml` de cada contenedor los inyecta mediante `env_file`. Por eso, ejecuta los comandos con `docker exec` después de iniciar el contenedor correspondiente.
+
+El orden siguiente respeta las dependencias entre parámetros SSM:
+
+```bash
+# 0) Iniciar los contenedores desde la raíz del repositorio
+docker compose -f .docker/docker-compose.yml up -d
+docker compose -f infrastructure/.docker/docker-compose.yml up -d
+docker compose -f backend/.docker/docker-compose.yml up -d
+
+# 1) Infraestructura base: crea buckets, colas, secretos e IoT
+docker exec -w /app/infrastructure/serverless/storage \
+ CoffeeCultivationInfrastructure serverless deploy --stage dev
+docker exec -w /app/infrastructure/serverless/queue \
+ CoffeeCultivationInfrastructure serverless deploy --stage dev
+docker exec -w /app/infrastructure/serverless/secrets \
+ CoffeeCultivationInfrastructure serverless deploy --stage dev
+docker exec -w /app/infrastructure/serverless/iot \
+ CoffeeCultivationInfrastructure serverless deploy --stage dev
+
+# 2) Layers del backend: crea los ARNs consumidos por batch y streaming
+docker exec -w /app/backend/serverless/layers \
+ CoffeeCultivationBackend serverless deploy --stage dev
+
+# 3) Backend batch: crea los parámetros SSM consumidos por alerts
+docker exec -w /app/backend/serverless/batch \
+ CoffeeCultivationBackend serverless deploy --stage dev
+
+# 4) Alertas: depende de las colas y del nombre de la Lambda batch
+docker exec -w /app/infrastructure/serverless/alerts \
+ CoffeeCultivationInfrastructure serverless deploy --stage dev
+
+# 5) Streaming: despliega el procesamiento de lecturas de sensores
+docker exec -w /app/backend/serverless/streaming \
+ CoffeeCultivationBackend serverless deploy --stage dev
+```
+
+Después de cada despliegue, verifica que terminó con `Service deployed` antes de continuar. Si ejecutas `serverless` directamente dentro de una terminal que no es uno de esos contenedores, carga las variables manualmente:
+
+```bash
+set -a
+. /app/.envs/aws.env
+. /app/.envs/sls.env
+. /app/infrastructure/.envs/config.env
+set +a
+```
+
+Puedes comprobar la dependencia principal de `alerts` antes de desplegarla:
+
+```bash
+docker exec CoffeeCultivationInfrastructure \
+ aws ssm get-parameter \
+ --name "/coffee-cultivation-backend-batch/SplitAndEnqueueLambdaName" \
+ --query "Parameter.Value" --output text
+```
+
+El comando debe devolver el nombre de la Lambda. Si aparece `ParameterNotFound`, repite el despliegue del paso 3.
+
 ### Monorepo (diagramas, etc.)
 
 ```bash
 # Generar diagramas de arquitectura
 docker exec -w /app/docs CoffeeCultivation python3 architecture.py
 ```
+
+## Iniciar y probar los flujos
+
+Estos pasos se ejecutan después de completar el despliegue recomendado. Usa la
+misma región, `stage` y `DEVELOPER` definidos en los archivos `.env`.
+
+### Flujo batch: prueba de aceptación en Postman
+
+El batch inicia con el endpoint privado `POST /coffee-historical-data`. La
+petición debe contener un CSV codificado en Base64 dentro de la propiedad
+`file`; no se envía como `multipart/form-data`.
+
+1. Obtén la URL del endpoint y la API key desde el contenedor backend:
+
+```bash
+docker exec -w /app/backend/serverless/batch \
+ CoffeeCultivationBackend serverless info --stage dev --verbose
+```
+
+En la salida, usa el endpoint de `POST /coffee-historical-data` y el valor
+de `api keys` como API key. La URL normalmente tiene esta forma:
+`https://<api-id>.execute-api.us-east-1.amazonaws.com/dev/coffee-historical-data`.
+
+1. En Postman crea una petición `POST` con esa URL y configura:
+
+- Header `Content-Type`: `application/json`
+- Header `x-api-key`: la API key obtenida en el paso anterior
+- Authorization: `AWS Signature`
+- AWS Region: `us-east-1`
+- Service Name: `execute-api`
+- AccessKey y SecretKey: las credenciales AWS del archivo `.envs/aws.env`
+
+La firma AWS es necesaria porque la API es privada. Si el stage usa una
+API key gestionada en API Gateway, también puedes consultar su valor con:
+
+```bash
+docker exec CoffeeCultivationBackend aws apigateway get-api-keys \
+ --include-values --query 'items[?contains(name, `backend-batch`)]' \
+ --output table
+```
+
+1. En `Body > raw > JSON`, envía un objeto como este. El valor de `file` debe
+   ser el Base64 de un CSV, no el contenido del CSV directamente:
+
+```json
+{
+  "file": "<BASE64_DEL_CSV>"
+}
+```
+
+Para generar el valor sin saltos de línea, crea un CSV con al menos estas
+columnas y una fila válida:
+
+```csv
+LON,LAT,YEAR,MM,DD,DOY,Date,Temp_Max,Temp_Min,Humidity,Solar_Radiation,Precipitation_mm,Location,Close_USD_60kg,Is_Weekend,Is_Interpolated,brl,cny,mxn
+-75.68,4.53,2026,8,22,234,2026-08-22,25,17,70,500,2,Armenia,180,false,false,5,7,18
+```
+
+Guarda el contenido como `accepted.csv` y ejecuta:
+
+```bash
+base64 -w 0 accepted.csv
+```
+
+Pega la salida entre las comillas de `file` en Postman. El CSV debe tener
+como máximo 300 filas y todas las columnas requeridas.
+
+1. Envía la petición. Una aceptación correcta devuelve HTTP `202` y un cuerpo
+   similar a:
+
+```json
+{
+  "message": "Coffee historical dataset accepted",
+  "s3_key": "silver/uploads/<uuid>.csv",
+  "rows_accepted": 1
+}
+```
+
+Ese resultado confirma la primera etapa. El evento de S3 dispara
+`SplitAndEnqueue`, que publica cada fila en SQS, y luego
+`ValidateAndPersist` la almacena en MongoDB. Para revisar el procesamiento:
+
+```bash
+docker exec CoffeeCultivationBackend aws logs tail \
+ /aws/lambda/${DEPLOY_APP}-backend-batch-ValidateAndPersist --follow
+```
+
+El script `backend/tests/batch/send_invalid_row_to_queue.sh` sirve para la
+prueba negativa de DLQ; no debe usarse para validar una aceptación.
+
+Si el endpoint devuelve `202` pero `SplitAndEnqueue` no se ejecuta, vuelve a
+desplegar el stack batch para actualizar el filtro del evento S3 y después
+envía un archivo nuevo desde Postman:
+
+```bash
+docker exec -w /app/backend/serverless/batch \
+ CoffeeCultivationBackend serverless deploy --stage dev
+```
+
+El filtro correcto es `silver/uploads/`, que coincide con la ruta donde
+`ValidateAndStore` guarda los archivos. La alerta
+`coffee-cultivation-alerts-coffee-batch-dlq-messages-dev` se activa cuando hay
+mensajes rechazados en la DLQ; el mensaje enviado por
+`send_invalid_row_to_queue.sh` contiene `invalid_field` intencionalmente y
+activa esa alarma como prueba negativa. Después de revisarlo, elimina ese
+mensaje desde la consola SQS o espera su retención antes de repetir una
+prueba limpia.
+
+### Flujo streaming: iniciar una lectura de sensor
+
+El streaming no usa HTTP. Un sensor publica por MQTT sobre TLS mutuo en el
+tópico `sensors/coffee/<sensor-id>/data`; IoT Core redirige la lectura a SQS y
+`PersistSensorReading` la valida y la guarda en MongoDB.
+
+1. Verifica que los stacks `iot` y `backend/streaming` terminaron con
+   `Service deployed`.
+2. En el contenedor backend, provisiona un sensor de prueba. Esto crea el
+   Thing, el certificado y sus claves locales:
+
+```bash
+docker exec -w /app/backend/tests/sensor_readings \
+ CoffeeCultivationBackend ./provision_sensor.sh sensor-001
+```
+
+1. Publica una lectura válida usando el certificado mTLS:
+
+```bash
+docker exec -w /app/backend/tests/sensor_readings \
+ CoffeeCultivationBackend ./send_sensor_reading.sh sensor-001
+```
+
+El payload por defecto es
+`backend/tests/fixtures/sensor_readings/valid_reading.json`. Para probar
+una lectura concreta, pasa su archivo como segundo argumento:
+
+```bash
+docker exec -w /app/backend/tests/sensor_readings \
+ CoffeeCultivationBackend ./send_sensor_reading.sh sensor-001 \
+ ../fixtures/sensor_readings/valid_reading.json
+```
+
+1. Revisa los logs de la Lambda para confirmar la persistencia:
+
+```bash
+docker exec CoffeeCultivationBackend aws logs tail \
+ /aws/lambda/${DEPLOY_APP}-backend-streaming-PersistSensorReading --follow
+```
+
+Para una prueba negativa, usa `invalid_location.json` o
+`invalid_temperature.json`; la lectura debe terminar en la DLQ de
+`SensorReadings` y no en la colección principal.
 
 ## Troubleshooting
 
@@ -188,7 +402,18 @@ docker-compose -f .docker/docker-compose.yml build --no-cache
 docker-compose -f .docker/docker-compose.yml up -d
 ```
 
-### Permisos denegados en .pth
+### Permisos denegados en Serverless o nodemodules
+
+Si `serverless deploy` falla con un error como `EACCES: permission denied, mkdir '/usr/local/lib/node_modules/serverless/node_modules/.bin'`, corrige el propietario del directorio dentro del contenedor:
+
+```bash
+# Ejecuta esto desde la máquina host
+# (no dentro del contenedor, porque no tiene acceso a 'docker' como comando)
+docker exec -u root CoffeeCultivationBackend sh -lc 'chown -R aaccode:aaccode /usr/local/lib/node_modules && chmod -R u+rwX /usr/local/lib/node_modules/serverless'
+
+# Verifica que ya funciona
+docker exec CoffeeCultivationBackend sh -lc 'serverless --version'
+```
 
 Si ves errores al instalar layers:
 
@@ -197,18 +422,51 @@ Si ves errores al instalar layers:
 docker exec -u root CoffeeCultivationBackend chown -R coffee-cultivation /usr/local/lib/python3.13/site-packages/
 ```
 
-### Credenciales expiradas
+### Error de SSM no resuelto en `custom.sqs.*`
 
-Actualiza `.envs/aws.env` con nuevas credenciales y reinicia el contenedor:
+Si aparece un mensaje como:
+
+```text
+Cannot resolve '${ssm:/coffee-cultivation-queue/CoffeeBatchQueueUrl}' variable at 'custom.sqs.coffeeBatch.url'
+```
+
+significa que la infraestructura aún no fue desplegada. Revisa primero los stacks de `infrastructure/serverless` y luego vuelve a ejecutar el deploy del `batch`.
 
 ```bash
-docker restart CoffeeCultivationBackend
-docker restart CoffeeCultivationInfrastructure
+docker exec CoffeeCultivationInfrastructure aws ssm get-parameter --name "/coffee-cultivation-queue/CoffeeBatchQueueUrl" --query "Parameter.Value" --output text
+```
+
+Si el comando devuelve una URL, entonces el parámetro SSM ya existe y el deploy del batch puede continuar.
+
+### Credenciales ausentes o expiradas
+
+Actualiza `.envs/aws.env` y recrea los contenedores. `docker restart` no vuelve
+a leer los archivos `env_file`, por lo que no corrige variables añadidas o
+modificadas después de crear el contenedor:
+
+```bash
+# Ejecuta desde la raíz del repositorio, fuera del contenedor
+docker compose -f infrastructure/.docker/docker-compose.yml up -d --force-recreate
+docker compose -f backend/.docker/docker-compose.yml up -d --force-recreate
+```
+
+Comprueba que las credenciales quedaron disponibles sin imprimir sus valores:
+
+```bash
+docker exec CoffeeCultivationBackend aws sts get-caller-identity
+```
+
+Si devuelve la identidad de la cuenta AWS, repite el despliegue del batch:
+
+```bash
+docker exec -w /app/backend/serverless/batch \
+ CoffeeCultivationBackend serverless deploy --stage dev
 ```
 
 ### MongoDB Atlas no disponible
 
 Verifica que:
+
 1. El cluster MongoDB Atlas esté ejecutándose
 2. Tu IP esté en la lista blanca (Network Access)
 3. Las credenciales en `infrastructure/.envs/config.env` sean correctas
@@ -239,21 +497,23 @@ docker exec -w /app/backend CoffeeCultivationBackend python3 -m database.demo_in
 ### 4. Desplegar
 
 ```bash
-# Backend layers (primero)
+# Infrastructure base (primero, porque batch y streaming dependen de estos parámetros SSM)
+docker exec -w /app/infrastructure/serverless/storage CoffeeCultivationInfrastructure serverless deploy --stage dev
+docker exec -w /app/infrastructure/serverless/queue CoffeeCultivationInfrastructure serverless deploy --stage dev
+docker exec -w /app/infrastructure/serverless/secrets CoffeeCultivationInfrastructure serverless deploy --stage dev
+docker exec -w /app/infrastructure/serverless/iot CoffeeCultivationInfrastructure serverless deploy --stage dev
+
+# Backend layers (después)
 docker exec -w /app/backend/serverless/layers CoffeeCultivationBackend serverless deploy --stage dev
 
 # Batch
 docker exec -w /app/backend/serverless/batch CoffeeCultivationBackend serverless deploy --stage dev
 
+# Alerts (después de batch, porque consume sus parámetros SSM)
+docker exec -w /app/infrastructure/serverless/alerts CoffeeCultivationInfrastructure serverless deploy --stage dev
+
 # Streaming
 docker exec -w /app/backend/serverless/streaming CoffeeCultivationBackend serverless deploy --stage dev
-
-# Infrastructure (en orden)
-docker exec -w /app/infrastructure/serverless/storage CoffeeCultivationInfrastructure serverless deploy --stage dev
-docker exec -w /app/infrastructure/serverless/queue CoffeeCultivationInfrastructure serverless deploy --stage dev
-docker exec -w /app/infrastructure/serverless/secrets CoffeeCultivationInfrastructure serverless deploy --stage dev
-docker exec -w /app/infrastructure/serverless/iot CoffeeCultivationInfrastructure serverless deploy --stage dev
-docker exec -w /app/infrastructure/serverless/alerts CoffeeCultivationInfrastructure serverless deploy --stage dev
 ```
 
 ## Limpieza
@@ -278,12 +538,12 @@ docker system prune --volumes
 
 ## Variables de referencia rápida
 
-| Variable | Ubicación | Propósito |
-|---|---|---|
-| `AWS_ACCESS_KEY_ID` | `.envs/aws.env` | Autenticación AWS |
-| `DEVELOPER` | `backend/.envs/config.env`, `infrastructure/.envs/config.env` | Namespacing de recursos |
-| `DEPLOY_APP` | Establecida automáticamente por docker-compose | Nombre de la aplicación en recursos AWS (`coffee-cultivation`) |
-| `MONGO_CREDENTIALS_SECRET_NAME` | Establecida por Lambda handlers | Ruta SSM de MongoDB credentials |
+| Variable                        | Ubicación                                                     | Propósito                                                      |
+| ------------------------------- | ------------------------------------------------------------- | -------------------------------------------------------------- |
+| `AWS_ACCESS_KEY_ID`             | `.envs/aws.env`                                               | Autenticación AWS                                              |
+| `DEVELOPER`                     | `backend/.envs/config.env`, `infrastructure/.envs/config.env` | Namespacing de recursos                                        |
+| `DEPLOY_APP`                    | Establecida automáticamente por docker-compose                | Nombre de la aplicación en recursos AWS (`coffee-cultivation`) |
+| `MONGO_CREDENTIALS_SECRET_NAME` | Establecida por Lambda handlers                               | Ruta SSM de MongoDB credentials                                |
 
 ---
 

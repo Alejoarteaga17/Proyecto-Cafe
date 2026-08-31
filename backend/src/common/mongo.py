@@ -1,4 +1,5 @@
 import json
+from urllib.parse import quote_plus
 
 import boto3
 from pymongo import MongoClient
