@@ -6,13 +6,7 @@
 
 Todos los contenedores Docker ahora usan la nomenclatura del proyecto Cultivo de Café Inteligente:
 
-| Anterior | Nuevo | Propósito |
-|---|---|---|
-| `DataEngCourse` | `CoffeeCultivation` | Monorepo (diagramas, tooling) |
-| `DataEngCourseBackend` | `CoffeeCultivationBackend` | Lambda stacks (batch/streaming) |
-| `DataEngCourseInfrastructure` | `CoffeeCultivationInfrastructure` | Recursos AWS compartidos |
-
-**Archivos modificados:**
+**Archivos de referencia:**
 - `.docker/docker-compose.yml`
 - `backend/.docker/docker-compose.yml`
 - `infrastructure/.docker/docker-compose.yml`
@@ -31,12 +25,7 @@ Esto evita colisiones y mantiene la identidad del proyecto clara.
 
 ### 3. Variables de entorno DOCKER
 
-**Antes:**
-```yaml
-DEPLOY_APP=data-eng-course
-```
-
-**Después:**
+**Configuración actual:**
 ```yaml
 DEPLOY_APP=coffee-cultivation
 ```
@@ -51,11 +40,6 @@ Y afecta automáticamente a:
 - Nombres de secretos en Secrets Manager
 
 ### 4. Rutas de Python Layers
-
-**Antes:**
-```
-data-eng-course-backend-layers-{layer-name}.pth
-```
 
 **Después:**
 ```
@@ -86,7 +70,7 @@ VS Code ahora reconoce los contenedores con los nombres correctos.
 "name": "coffee-cultivation-infrastructure"
 ```
 
-**Archivos modificados:**
+**Archivos de referencia:**
 - `backend/package.json`
 - `backend/package-lock.json`
 - `infrastructure/package.json`

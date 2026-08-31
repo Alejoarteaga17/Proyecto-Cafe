@@ -1,7 +1,7 @@
 {
   "name": "coffee-cultivation-backend",
   "dockerComposeFile": ".docker/docker-compose.yml",
-  "service": "data_eng_course_backend",
+  "service": "coffee-cultivation-backend",
   "workspaceFolder": "/app/backend",
   "customizations": {
     "vscode": {
