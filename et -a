@@ -1,0 +1,99 @@
+INIT_START Runtime Version: python:3.13.mainlinev2.v31	Runtime Version ARN: arn:aws:lambda:us-east-1::runtime:377103549ce49b4322502b820a6a3891903c990e4dee8f5c6c30f87662fa53b8
+	START RequestId: 5a6e89e8-c769-590d-bcdf-eae765454e31 Version: $LATEST
+	[ERROR] InvalidURI: MongoDB URI options are key=value pairs
+Traceback (most recent call last):
+  File "/var/task/src/validate_and_persist/handler.py", line 20, in handler
+    _process_record(record)
+  File "/var/task/src/validate_and_persist/handler.py", line 36, in _process_record
+    collection = mongo.get_collection(MONGO_CREDENTIALS_SECRET_NAME,
+  File "/var/task/src/common/mongo.py", line 19, in get_collection
+    'client': MongoClient(uri),
+  File "/opt/python/pymongo/synchronous/mongo_client.py", line 818, in __init__
+    res = _validate_uri(
+  File "/opt/python/pymongo/uri_parser_shared.py", line 560, in _validate_uri
+    options.update(split_options(opts, validate, warn, normalize))
+  File "/opt/python/pymongo/uri_parser_shared.py", line 410, in split_options
+    raise InvalidURI("MongoDB URI options are key=value pairs") from None	END RequestId: 5a6e89e8-c769-590d-bcdf-eae765454e31
+	REPORT RequestId: 5a6e89e8-c769-590d-bcdf-eae765454e31	Duration: 164.21 ms	Billed Duration: 1239 ms	Memory Size: 256 MB	Max Memory Used: 111 MB	Init Duration: 1074.56 ms	
+	START RequestId: 8855b3c5-ec7d-505e-8a55-d0ca4e05fce3 Version: $LATEST
+	[ERROR] InvalidURI: MongoDB URI options are key=value pairs
+Traceback (most recent call last):
+  File "/var/task/src/validate_and_persist/handler.py", line 20, in handler
+    _process_record(record)
+  File "/var/task/src/validate_and_persist/handler.py", line 36, in _process_record
+    collection = mongo.get_collection(MONGO_CREDENTIALS_SECRET_NAME,
+  File "/var/task/src/common/mongo.py", line 19, in get_collection
+    'client': MongoClient(uri),
+  File "/opt/python/pymongo/synchronous/mongo_client.py", line 818, in __init__
+    res = _validate_uri(
+  File "/opt/python/pymongo/uri_parser_shared.py", line 560, in _validate_uri
+    options.update(split_options(opts, validate, warn, normalize))
+  File "/opt/python/pymongo/uri_parser_shared.py", line 410, in split_options
+    raise InvalidURI("MongoDB URI options are key=value pairs") from None	END RequestId: 8855b3c5-ec7d-505e-8a55-d0ca4e05fce3
+	REPORT RequestId: 8855b3c5-ec7d-505e-8a55-d0ca4e05fce3	Duration: 54.54 ms	Billed Duration: 55 ms	Memory Size: 256 MB	Max Memory Used: 111 MB	
+	START RequestId: e947141e-5d65-582c-9f52-7711ffc9df10 Version: $LATEST
+	[ERROR] InvalidURI: MongoDB URI options are key=value pairs
+Traceback (most recent call last):
+  File "/var/task/src/validate_and_persist/handler.py", line 20, in handler
+    _process_record(record)
+  File "/var/task/src/validate_and_persist/handler.py", line 36, in _process_record
+    collection = mongo.get_collection(MONGO_CREDENTIALS_SECRET_NAME,
+  File "/var/task/src/common/mongo.py", line 19, in get_collection
+    'client': MongoClient(uri),
+  File "/opt/python/pymongo/synchronous/mongo_client.py", line 818, in __init__
+    res = _validate_uri(
+  File "/opt/python/pymongo/uri_parser_shared.py", line 560, in _validate_uri
+    options.update(split_options(opts, validate, warn, normalize))
+  File "/opt/python/pymongo/uri_parser_shared.py", line 410, in split_options
+    raise InvalidURI("MongoDB URI options are key=value pairs") from None	END RequestId: e947141e-5d65-582c-9f52-7711ffc9df10
+	REPORT RequestId: e947141e-5d65-582c-9f52-7711ffc9df10	Duration: 49.23 ms	Billed Duration: 50 ms	Memory Size: 256 MB	Max Memory Used: 111 MB	
+	INIT_START Runtime Version: python:3.13.mainlinev2.v31	Runtime Version ARN: arn:aws:lambda:us-east-1::runtime:377103549ce49b4322502b820a6a3891903c990e4dee8f5c6c30f87662fa53b8
+	START RequestId: 538bb102-8897-5921-9c89-d20d2c5f0091 Version: $LATEST
+	[ERROR] InvalidURI: MongoDB URI options are key=value pairs
+Traceback (most recent call last):
+  File "/var/task/src/validate_and_persist/handler.py", line 20, in handler
+    _process_record(record)
+  File "/var/task/src/validate_and_persist/handler.py", line 36, in _process_record
+    collection = mongo.get_collection(MONGO_CREDENTIALS_SECRET_NAME,
+  File "/var/task/src/common/mongo.py", line 19, in get_collection
+    'client': MongoClient(uri),
+  File "/opt/python/pymongo/synchronous/mongo_client.py", line 818, in __init__
+    res = _validate_uri(
+  File "/opt/python/pymongo/uri_parser_shared.py", line 560, in _validate_uri
+    options.update(split_options(opts, validate, warn, normalize))
+  File "/opt/python/pymongo/uri_parser_shared.py", line 410, in split_options
+    raise InvalidURI("MongoDB URI options are key=value pairs") from None	END RequestId: 538bb102-8897-5921-9c89-d20d2c5f0091
+	REPORT RequestId: 538bb102-8897-5921-9c89-d20d2c5f0091	Duration: 152.09 ms	Billed Duration: 990 ms	Memory Size: 256 MB	Max Memory Used: 110 MB	Init Duration: 837.23 ms	
+	START RequestId: 0bebfcbb-550c-5c4f-9e42-9fb4f005f5ff Version: $LATEST
+	[ERROR] InvalidURI: MongoDB URI options are key=value pairs
+Traceback (most recent call last):
+  File "/var/task/src/validate_and_persist/handler.py", line 20, in handler
+    _process_record(record)
+  File "/var/task/src/validate_and_persist/handler.py", line 36, in _process_record
+    collection = mongo.get_collection(MONGO_CREDENTIALS_SECRET_NAME,
+  File "/var/task/src/common/mongo.py", line 19, in get_collection
+    'client': MongoClient(uri),
+  File "/opt/python/pymongo/synchronous/mongo_client.py", line 818, in __init__
+    res = _validate_uri(
+  File "/opt/python/pymongo/uri_parser_shared.py", line 560, in _validate_uri
+    options.update(split_options(opts, validate, warn, normalize))
+  File "/opt/python/pymongo/uri_parser_shared.py", line 410, in split_options
+    raise InvalidURI("MongoDB URI options are key=value pairs") from None	END RequestId: 0bebfcbb-550c-5c4f-9e42-9fb4f005f5ff
+	REPORT RequestId: 0bebfcbb-550c-5c4f-9e42-9fb4f005f5ff	Duration: 25.27 ms	Billed Duration: 26 ms	Memory Size: 256 MB	Max Memory Used: 110 MB	
+	START RequestId: f90fa11c-333b-5c9f-b4db-c2139606a7bc Version: $LATEST
+	[ERROR] InvalidURI: MongoDB URI options are key=value pairs
+Traceback (most recent call last):
+  File "/var/task/src/validate_and_persist/handler.py", line 20, in handler
+    _process_record(record)
+  File "/var/task/src/validate_and_persist/handler.py", line 36, in _process_record
+    collection = mongo.get_collection(MONGO_CREDENTIALS_SECRET_NAME,
+  File "/var/task/src/common/mongo.py", line 19, in get_collection
+    'client': MongoClient(uri),
+  File "/opt/python/pymongo/synchronous/mongo_client.py", line 818, in __init__
+    res = _validate_uri(
+  File "/opt/python/pymongo/uri_parser_shared.py", line 560, in _validate_uri
+    options.update(split_options(opts, validate, warn, normalize))
+  File "/opt/python/pymongo/uri_parser_shared.py", line 410, in split_options
+    raise InvalidURI("MongoDB URI options are key=value pairs") from None	END RequestId: f90fa11c-333b-5c9f-b4db-c2139606a7bc
+	REPORT RequestId: f90fa11c-333b-5c9f-b4db-c2139606a7bc	Duration: 54.09 ms	Billed Duration: 55 ms	Memory Size: 256 MB	Max Memory Used: 111 MB	
+

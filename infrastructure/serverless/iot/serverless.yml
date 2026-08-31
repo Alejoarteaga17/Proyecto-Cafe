@@ -6,7 +6,7 @@ provider:
   name: aws
   stage: dev
   region: us-east-1
-  stackName: ${env:DEPLOY_APP}-${self:service}
+  stackName: ${env:DEPLOY_APP, 'coffee-cultivation'}-${self:service}
   deploymentBucket:
     name: ${self:custom.s3.deploymentBucketName.${self:custom.stage}}
 
@@ -36,17 +36,17 @@ custom:
         - dev
         - test
         - prod
-  servicePrefix: ${env:DEPLOY_APP}-${self:service}
-  developer: ${env:DEVELOPER}
+  servicePrefix: ${env:DEPLOY_APP, 'coffee-cultivation'}-${self:service}
+  developer: ${env:DEVELOPER, 'aaccode'}
   s3:
     deploymentBucketName:
-      dev: ${self:provider.region}.cfn.${self:service}.${env:DEPLOY_APP}.${self:custom.stage}.${self:custom.developer}.deploys
-      test: ${self:provider.region}.cfn.${self:service}.${env:DEPLOY_APP}.${self:custom.stage}.deploys
-      prod: ${self:provider.region}.cfn.${self:service}.${env:DEPLOY_APP}.${self:custom.stage}.deploys
+      dev: ${self:provider.region}-cfn-${self:service}-${self:custom.stage}-${self:custom.developer}-deploys
+      test: ${self:provider.region}-cfn-${self:service}-${self:custom.stage}-deploys
+      prod: ${self:provider.region}-cfn-${self:service}-${self:custom.stage}-deploys
   sqs:
     sensorReadings:
-      url: ${ssm:/${env:DEPLOY_APP}-queue/SensorReadingsQueueUrl}
-      arn: ${ssm:/${env:DEPLOY_APP}-queue/SensorReadingsQueueArn}
+      url: ${ssm:/${env:DEPLOY_APP, 'coffee-cultivation'}-queue/SensorReadingsQueueUrl}
+      arn: ${ssm:/${env:DEPLOY_APP, 'coffee-cultivation'}-queue/SensorReadingsQueueArn}
   iot:
     ruleName:
       dev: sensor_readings_${self:custom.stage}_${self:custom.developer}

@@ -8,7 +8,7 @@ provider:
   region: us-east-1
   runtime: python3.13
   architecture: ${file(../architecture.js):get}
-  stackName: ${env:DEPLOY_APP}-${self:service}
+  stackName: ${env:DEPLOY_APP, 'coffee-cultivation'}-${self:service}
   deploymentBucket:
     name: ${self:custom.s3.deploymentBucketName.${self:custom.stage}}
 
@@ -47,21 +47,21 @@ custom:
         - dev
         - test
         - prod
-  servicePrefix: ${env:DEPLOY_APP}-${self:service}
-  developer: ${env:DEVELOPER}
+  servicePrefix: ${env:DEPLOY_APP, 'coffee-cultivation'}-${self:service}
+  developer: ${env:DEVELOPER, 'aaccode'}
   s3:
     deploymentBucketName:
-      dev: ${self:provider.region}.cfn.${self:service}.${env:DEPLOY_APP}.${self:custom.stage}.${self:custom.developer}.deploys
-      test: ${self:provider.region}.cfn.${self:service}.${env:DEPLOY_APP}.${self:custom.stage}.deploys
-      prod: ${self:provider.region}.cfn.${self:service}.${env:DEPLOY_APP}.${self:custom.stage}.deploys
+      dev: ${self:provider.region}-cfn-${self:service}-${self:custom.stage}-${self:custom.developer}-deploys
+      test: ${self:provider.region}-cfn-${self:service}-${self:custom.stage}-deploys
+      prod: ${self:provider.region}-cfn-${self:service}-${self:custom.stage}-deploys
   sqs:
     sensorReadings:
-      url: ${ssm:/${env:DEPLOY_APP}-queue/SensorReadingsQueueUrl}
-      arn: ${ssm:/${env:DEPLOY_APP}-queue/SensorReadingsQueueArn}
+      url: ${ssm:/${env:DEPLOY_APP, 'coffee-cultivation'}-queue/SensorReadingsQueueUrl}
+      arn: ${ssm:/${env:DEPLOY_APP, 'coffee-cultivation'}-queue/SensorReadingsQueueArn}
     sensorReadingsDLQ:
-      url: ${ssm:/${env:DEPLOY_APP}-queue/SensorReadingsDLQUrl}
-      arn: ${ssm:/${env:DEPLOY_APP}-queue/SensorReadingsDLQArn}
+      url: ${ssm:/${env:DEPLOY_APP, 'coffee-cultivation'}-queue/SensorReadingsDLQUrl}
+      arn: ${ssm:/${env:DEPLOY_APP, 'coffee-cultivation'}-queue/SensorReadingsDLQArn}
   layers:
-    mongo: ${ssm:/${env:DEPLOY_APP}-backend-layers/MongoLayerArn}
+    mongo: ${ssm:/${env:DEPLOY_APP, 'coffee-cultivation'}-backend-layers/MongoLayerArn}
   secretsManager:
-    mongoCredentials: /${env:DEPLOY_APP}-secrets/MongoCredentials
+    mongoCredentials: /${env:DEPLOY_APP, 'coffee-cultivation'}-secrets/MongoCredentials
