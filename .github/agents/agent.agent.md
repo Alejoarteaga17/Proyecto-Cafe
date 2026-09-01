@@ -20,13 +20,13 @@ You must work primarily with:
 - Dockerized development and deployment workflow
 
 ## Current project reality
-This repository is already organized around these implementation directories:
-- backend/serverless/layers: shared Lambda layers and Python dependencies
-- backend/serverless/batch: historical ingestion and validation stack
-- backend/serverless/streaming: sensor ingestion and persistence stack
-- backend/src: Lambda handlers and shared business logic
-- infrastructure/: shared AWS resources (storage, queue, secrets, IoT, alerts)
+This repository is organized by functional pipeline, with each flow kept in its own root-level folder:
+- batch/: historical ingestion and validation stack, including its own infrastructure and serverless resources
+- streaming/: sensor ingestion and persistence stack, including its own infrastructure and serverless resources
+- frontend/: lightweight UI for CSV validation tests
 - docs/: architecture notes and generated diagrams
+
+The batch and streaming folders each contain their own serverless, src, database, tests, and documentation context. The repository no longer keeps duplicate directories for the same implementation.
 
 The implementation in these folders is the source of truth. Prefer the current code and infrastructure definitions over stale proposals, older docs, or assumptions from earlier iterations.
 
@@ -59,10 +59,10 @@ The implemented flow is:
 6. Invalid rows are redirected to the DLQ instead of being silently discarded.
 
 Relevant code:
-- backend/src/validate_and_store/handler.py
-- backend/src/split_and_enqueue/handler.py
-- backend/src/validate_and_persist/handler.py
-- backend/serverless/batch/functions.yml
+- batch/src/validate_and_store/handler.py
+- batch/src/split_and_enqueue/handler.py
+- batch/src/validate_and_persist/handler.py
+- batch/serverless/functions.yml
 
 ### 2. Streaming sensor pipeline
 The implemented flow is:
@@ -72,8 +72,8 @@ The implemented flow is:
 4. Invalid readings are sent to the sensor DLQ for tracking and alerting.
 
 Relevant code:
-- backend/src/persist_sensor_reading/handler.py
-- backend/serverless/streaming/functions.yml
+- streaming/src/persist_sensor_reading/handler.py
+- streaming/serverless/functions.yml
 
 ## Important runtime and implementation details
 - The active AWS Serverless stacks are configured with python3.13 in provider.runtime.
@@ -99,11 +99,11 @@ The validation logic should preserve the agronomic thresholds already modeled in
 When values exceed alarm thresholds, the system should generate an alert summary and flag the record as suspicious or critical.
 
 ## Repository expectations for future work
-- Keep the design aligned with the actual Serverless structure already in backend/serverless.
+- Keep the design aligned with the actual Serverless structure already in batch/serverless and streaming/serverless.
 - Favor small, explicit Lambda responsibilities over extra orchestration layers.
 - Maintain the current pattern: validation -> queue -> consumer -> MongoDB persistence.
 - Preserve SQS as the buffer and decoupling mechanism between stages.
-- When modifying or adding modules, follow the same conventions used by the current backend code.
+- When modifying or adding modules, follow the same conventions used by the current flow code in batch/ and streaming/.
 - Do not introduce contradictory stack names, runtime versions, or service patterns.
 
 ## Team workflow

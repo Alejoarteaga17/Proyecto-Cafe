@@ -4,12 +4,12 @@
 !.envs/*.example
 .envs/*
 !.envs/.gitignore
-backend/.envs/*
-!backend/.envs/.gitignore
-!backend/.envs/*.example
-infrastructure/.envs/*
-!infrastructure/.envs/.gitignore
-!infrastructure/.envs/*.example
+batch/.envs/*
+!batch/.envs/.gitignore
+!batch/.envs/*.example
+streaming/.envs/*
+!streaming/.envs/.gitignore
+!streaming/.envs/*.example
 
 # Local and generated files
 .DS_Store
@@ -23,4 +23,5 @@ __pycache__/
 *.serverless
 .vscode/
 node_modules/
-backend/tests/sensor_readings/certs/
+batch/tests/sensor_readings/certs/
+streaming/tests/sensor_readings/certs/

@@ -39,9 +39,17 @@ Ambos flujos notifican eventos críticos mediante alarmas de CloudWatch y un top
 
 ### Estructura del repositorio
 
-- **`backend/`**: código Python de las Lambdas y stacks Serverless por hilo funcional: `layers`, `batch`, `streaming`.
-- **`infrastructure/`**: recursos compartidos de AWS por stack: `storage`, `queue`, `secrets`, `iot`, `alerts`.
+- **`batch/`**: flujo de ingestión histórica y validación de datos por lote.
+  - Incluye su `serverless`, `src`, `database`, `tests` e infraestructura propia dentro de `batch/infrastructure`.
+- **`streaming/`**: flujo de sensores y procesamiento en tiempo real.
+  - Incluye su `serverless`, `src`, `database`, `tests` e infraestructura propia dentro de `streaming/infrastructure`.
+- **`frontend/`**: interfaz ligera para pruebas de carga CSV y validación del backend.
 - **`docs/`**: diagramas de arquitectura generados con `python3 architecture.py`.
+- **`.envs/`**: variables de entorno compartidas del proyecto.
+
+La organización por flujo deja cada pipeline con su propio contexto funcional y su infraestructura asociada, sin depender de carpetas legacy del repositorio.
+
+Con esta estructura ya no quedan carpetas duplicadas ni versiones paralelas del mismo proyecto.
 
 Cada subproyecto tiene su propio README con el orden de despliegue y variables de entorno.
 

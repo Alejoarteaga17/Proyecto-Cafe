@@ -10,13 +10,13 @@ Esta guía explica cómo configurar el entorno Dockerizado para trabajar en el p
 
 ## Estructura de contenedores
 
-El proyecto contiene 3 contenedores principales:
+El proyecto usa un contenedor raíz para la capa de tooling del repositorio y, desde ahí, se ejecutan los comandos de cada flujo (`batch` y `streaming`) dentro del mismo entorno Docker.
 
-| Contenedor                        | Propósito                                          | Directorio                |
-| --------------------------------- | -------------------------------------------------- | ------------------------- |
-| `CoffeeCultivation`               | Monorepo-level tooling (diagramas de arquitectura) | `.docker/`                |
-| `CoffeeCultivationBackend`        | Lambdas y stacks Serverless del backend            | `backend/.docker/`        |
-| `CoffeeCultivationInfrastructure` | Recursos compartidos de AWS                        | `infrastructure/.docker/` |
+| Contenedor                        | Propósito                                             | Directorio                       |
+| --------------------------------- | ----------------------------------------------------- | -------------------------------- |
+| `CoffeeCultivation`               | Tooling del monorepo y diagramas de arquitectura      | `.docker/`                       |
+| `CoffeeCultivationBatch`          | Pipeline batch y su infraestructura asociada           | `/app/batch`                     |
+| `CoffeeCultivationStreaming`      | Pipeline streaming y su infraestructura asociada       | `/app/streaming`                 |
 
 ## Configuración inicial
 
@@ -53,12 +53,12 @@ Si usas Serverless Dashboard, completa la clave:
 SERVERLESS_ACCESS_KEY=your-key-here
 ```
 
-#### Paso 1c: Backend config (`backend/.envs/config.env`)
+#### Paso 1c: Batch config (`batch/.envs/config.env`)
 
 Copia desde el ejemplo:
 
 ```bash
-cp backend/.envs/config.env.example backend/.envs/config.env
+cp batch/.envs/config.env.example batch/.envs/config.env
 ```
 
 Completa con tu identificador de desarrollador:
@@ -68,12 +68,12 @@ DEVELOPER=your-name
 STAGE=dev
 ```
 
-#### Paso 1d: Infrastructure config (`infrastructure/.envs/config.env`)
+#### Paso 1d: Streaming config (`streaming/.envs/config.env`)
 
 Copia desde el ejemplo:
 
 ```bash
-cp infrastructure/.envs/config.env.example infrastructure/.envs/config.env
+cp streaming/.envs/config.env.example streaming/.envs/config.env
 ```
 
 Completa con credenciales de MongoDB Atlas y tu email de alertas:
@@ -97,21 +97,21 @@ ALERTS_EMAIL=team@example.com
 3. Escribe `Remote-Containers: Reopen in Container`
 4. El editor se reconectará dentro del contenedor `CoffeeCultivation`
 
-#### Opción B: Abrir específicamente backend o infrastructure
+#### Opción B: Abrir específicamente batch o streaming
 
-Para trabajar solo en backend:
+Para trabajar solo en batch:
 
 ```bash
 # En VS Code
-1. Abre el archivo backend/.devcontainer.json
+1. Abre la carpeta batch en el explorador del proyecto
 2. Cmd/Ctrl + Shift + P → Remote-Containers: Reopen Folder in Container
 ```
 
-Para infraestructura:
+Para streaming:
 
 ```bash
 # En VS Code
-1. Abre el archivo infrastructure/.devcontainer.json
+1. Abre la carpeta streaming en el explorador del proyecto
 2. Cmd/Ctrl + Shift + P → Remote-Containers: Reopen Folder in Container
 ```
 
@@ -137,100 +137,106 @@ node --version
 
 Si prefieres no usar VS Code Remote Containers, puedes ejecutar comandos directamente en los contenedores:
 
-### Backend
+### Batch
 
 ```bash
-# Instalar dependencias Lambda Layers
-docker exec -w /app/backend CoffeeCultivationBackend npm install
+# Instalar dependencias del flujo batch
+docker exec -w /app/batch CoffeeCultivation npm install
 
 # Validar sintaxis Python
-docker exec -w /app/backend CoffeeCultivationBackend python3 -m compileall src/
+docker exec -w /app/batch CoffeeCultivation python3 -m compileall src/
 
-# Ejecutar linter
-docker exec -w /app/backend CoffeeCultivationBackend cfn-lint serverless/batch/serverless.yml
+# Ejecutar linter del stack batch
+docker exec -w /app/batch CoffeeCultivation cfn-lint serverless/serverless.yml
 
-# Verificar que Serverless funciona dentro del contenedor
-# (si falla por permisos, usa la corrección del Troubleshooting más abajo)
-docker exec CoffeeCultivationBackend sh -lc 'serverless --version'
+# Verificar Serverless dentro del contenedor
+docker exec CoffeeCultivation sh -lc 'serverless --version'
 
 # Ver logs de CloudWatch
-docker exec CoffeeCultivationBackend aws logs tail /aws/lambda/coffee-cultivation-backend-ValidateAndStore --follow
+docker exec CoffeeCultivation aws logs tail /aws/lambda/coffee-cultivation-batch-ValidateAndStore --follow
 ```
 
-### Infrastructure
+### Streaming
 
 ```bash
-# Validar CloudFormation
-docker exec -w /app/infrastructure CoffeeCultivationInfrastructure cfn-lint serverless/storage/serverless.yml
+# Validar CloudFormation del flujo streaming
+docker exec -w /app/streaming CoffeeCultivation cfn-lint serverless/serverless.yml
 
-
-
-# Desplegar storage
-docker exec -w /app/infrastructure/serverless/storage CoffeeCultivationInfrastructure serverless deploy --stage dev
+# Desplegar la infraestructura del flujo streaming
+docker exec -w /app/streaming/infrastructure/serverless/storage CoffeeCultivation serverless deploy --stage dev
 
 # Ver parámetros SSM
-docker exec CoffeeCultivationInfrastructure aws ssm describe-parameters --filters Key=Name,Values=coffee-cultivation-queue
+docker exec CoffeeCultivation aws ssm describe-parameters --filters Key=Name,Values=coffee-cultivation-streaming-queue
 ```
 
 ### Flujo de despliegue recomendado
 
-Los archivos `.env` no se cargan automáticamente por ejecutar `serverless` desde una carpeta. El `docker-compose.yml` de cada contenedor los inyecta mediante `env_file`. Por eso, ejecuta los comandos con `docker exec` después de iniciar el contenedor correspondiente.
+Los archivos `.env` no se cargan automáticamente por ejecutar `serverless` desde una carpeta. El contenedor raíz inyecta las variables mediante `env_file` al arrancar el entorno. Por eso, ejecuta los comandos con `docker exec` desde la raíz del proyecto o desde la carpeta del flujo correspondiente.
 
-El orden siguiente respeta las dependencias entre parámetros SSM:
+La reactivación del entorno debe hacerse en este orden exacto. No son pasos intercambiables:
 
 ```bash
-# 0) Iniciar los contenedores desde la raíz del repositorio
+# 0) Iniciar el contenedor raíz
 docker compose -f .docker/docker-compose.yml up -d
-docker compose -f infrastructure/.docker/docker-compose.yml up -d
-docker compose -f backend/.docker/docker-compose.yml up -d
 
-# 1) Infraestructura base: crea buckets, colas, secretos e IoT
-docker exec -w /app/infrastructure/serverless/storage \
- CoffeeCultivationInfrastructure serverless deploy --stage dev
-docker exec -w /app/infrastructure/serverless/queue \
- CoffeeCultivationInfrastructure serverless deploy --stage dev
-docker exec -w /app/infrastructure/serverless/secrets \
- CoffeeCultivationInfrastructure serverless deploy --stage dev
-docker exec -w /app/infrastructure/serverless/iot \
- CoffeeCultivationInfrastructure serverless deploy --stage dev
+# 1) Infraestructura base del batch
+docker exec -w /app/batch/infrastructure/serverless/storage CoffeeCultivation serverless deploy --stage dev
+docker exec -w /app/batch/infrastructure/serverless/queue CoffeeCultivation serverless deploy --stage dev
+docker exec -w /app/batch/infrastructure/serverless/secrets CoffeeCultivation serverless deploy --stage dev
+docker exec -w /app/batch/infrastructure/serverless/iot CoffeeCultivation serverless deploy --stage dev
 
-# 2) Layers del backend: crea los ARNs consumidos por batch y streaming
-docker exec -w /app/backend/serverless/layers \
- CoffeeCultivationBackend serverless deploy --stage dev
+# 2) Infraestructura base del streaming
+docker exec -w /app/streaming/infrastructure/serverless/storage CoffeeCultivation serverless deploy --stage dev
+docker exec -w /app/streaming/infrastructure/serverless/queue CoffeeCultivation serverless deploy --stage dev
+docker exec -w /app/streaming/infrastructure/serverless/secrets CoffeeCultivation serverless deploy --stage dev
+docker exec -w /app/streaming/infrastructure/serverless/iot CoffeeCultivation serverless deploy --stage dev
 
-# 3) Backend batch: crea los parámetros SSM consumidos por alerts
-docker exec -w /app/backend/serverless/batch \
- CoffeeCultivationBackend serverless deploy --stage dev
+# 3) Despliegue del flujo batch
+docker exec -w /app/batch/serverless CoffeeCultivation serverless deploy --stage dev
 
-# 4) Alertas: depende de las colas y del nombre de la Lambda batch
-docker exec -w /app/infrastructure/serverless/alerts \
- CoffeeCultivationInfrastructure serverless deploy --stage dev
-
-# 5) Streaming: despliega el procesamiento de lecturas de sensores
-docker exec -w /app/backend/serverless/streaming \
- CoffeeCultivationBackend serverless deploy --stage dev
+# 4) Despliegue del flujo streaming
+docker exec -w /app/streaming/serverless CoffeeCultivation serverless deploy --stage dev
 ```
 
-Después de cada despliegue, verifica que terminó con `Service deployed` antes de continuar. Si ejecutas `serverless` directamente dentro de una terminal que no es uno de esos contenedores, carga las variables manualmente:
+Si quieres reactivar solo los pipelines del proyecto, este es el orden correcto y suficiente:
+
+```bash
+# Batch
+docker exec -w /app/batch/infrastructure/serverless/storage CoffeeCultivation serverless deploy --stage dev
+docker exec -w /app/batch/infrastructure/serverless/queue CoffeeCultivation serverless deploy --stage dev
+docker exec -w /app/batch/infrastructure/serverless/secrets CoffeeCultivation serverless deploy --stage dev
+docker exec -w /app/batch/infrastructure/serverless/iot CoffeeCultivation serverless deploy --stage dev
+docker exec -w /app/batch/serverless CoffeeCultivation serverless deploy --stage dev
+
+# Streaming
+docker exec -w /app/streaming/infrastructure/serverless/storage CoffeeCultivation serverless deploy --stage dev
+docker exec -w /app/streaming/infrastructure/serverless/queue CoffeeCultivation serverless deploy --stage dev
+docker exec -w /app/streaming/infrastructure/serverless/secrets CoffeeCultivation serverless deploy --stage dev
+docker exec -w /app/streaming/infrastructure/serverless/iot CoffeeCultivation serverless deploy --stage dev
+docker exec -w /app/streaming/serverless CoffeeCultivation serverless deploy --stage dev
+```
+
+Después de cada despliegue, verifica que terminó con `Service deployed` antes de continuar. Si ejecutas `serverless` directamente dentro de una terminal que no es el contenedor raíz, carga las variables manualmente:
 
 ```bash
 set -a
 . /app/.envs/aws.env
 . /app/.envs/sls.env
-. /app/infrastructure/.envs/config.env
+. /app/batch/.envs/config.env
+. /app/streaming/.envs/config.env
 set +a
 ```
 
-Puedes comprobar la dependencia principal de `alerts` antes de desplegarla:
+Puedes comprobar la dependencia principal del flujo batch antes de desplegar alertas:
 
 ```bash
-docker exec CoffeeCultivationInfrastructure \
+docker exec CoffeeCultivation \
  aws ssm get-parameter \
- --name "/coffee-cultivation-backend-batch/SplitAndEnqueueLambdaName" \
+ --name "/coffee-cultivation-batch/SplitAndEnqueueLambdaName" \
  --query "Parameter.Value" --output text
 ```
 
-El comando debe devolver el nombre de la Lambda. Si aparece `ParameterNotFound`, repite el despliegue del paso 3.
+El comando debe devolver el nombre de la Lambda. Si aparece `ParameterNotFound`, repite el despliegue del flujo batch.
 
 ### Monorepo (diagramas, etc.)
 
@@ -250,11 +256,11 @@ El batch inicia con el endpoint privado `POST /coffee-historical-data`. La
 petición debe contener un CSV codificado en Base64 dentro de la propiedad
 `file`; no se envía como `multipart/form-data`.
 
-1. Obtén la URL del endpoint y la API key desde el contenedor backend:
+1. Obtén la URL del endpoint y la API key desde el contenedor del flujo batch:
 
 ```bash
-docker exec -w /app/backend/serverless/batch \
- CoffeeCultivationBackend serverless info --stage dev --verbose
+docker exec -w /app/batch/serverless \
+ CoffeeCultivation serverless info --stage dev --verbose
 ```
 
 En la salida, usa el endpoint de `POST /coffee-historical-data` y el valor
@@ -274,8 +280,8 @@ La firma AWS es necesaria porque la API es privada. Si el stage usa una
 API key gestionada en API Gateway, también puedes consultar su valor con:
 
 ```bash
-docker exec CoffeeCultivationBackend aws apigateway get-api-keys \
- --include-values --query 'items[?contains(name, `backend-batch`)]' \
+docker exec CoffeeCultivation aws apigateway get-api-keys \
+ --include-values --query 'items[?contains(name, `batch`)]' \
  --output table
 ```
 
@@ -321,11 +327,11 @@ Ese resultado confirma la primera etapa. El evento de S3 dispara
 `ValidateAndPersist` la almacena en MongoDB. Para revisar el procesamiento:
 
 ```bash
-docker exec CoffeeCultivationBackend aws logs tail \
- /aws/lambda/${DEPLOY_APP}-backend-batch-ValidateAndPersist --follow
+docker exec CoffeeCultivation aws logs tail \
+ /aws/lambda/${DEPLOY_APP}-batch-ValidateAndPersist --follow
 ```
 
-El script `backend/tests/batch/send_invalid_row_to_queue.sh` sirve para la
+El script `batch/tests/batch/send_invalid_row_to_queue.sh` sirve para la
 prueba negativa de DLQ; no debe usarse para validar una aceptación.
 
 Si el endpoint devuelve `202` pero `SplitAndEnqueue` no se ejecuta, vuelve a
@@ -333,8 +339,8 @@ desplegar el stack batch para actualizar el filtro del evento S3 y después
 envía un archivo nuevo desde Postman:
 
 ```bash
-docker exec -w /app/backend/serverless/batch \
- CoffeeCultivationBackend serverless deploy --stage dev
+docker exec -w /app/batch/serverless \
+ CoffeeCultivation serverless deploy --stage dev
 ```
 
 El filtro correcto es `silver/uploads/`, que coincide con la ruta donde
@@ -352,38 +358,38 @@ El streaming no usa HTTP. Un sensor publica por MQTT sobre TLS mutuo en el
 tópico `sensors/coffee/<sensor-id>/data`; IoT Core redirige la lectura a SQS y
 `PersistSensorReading` la valida y la guarda en MongoDB.
 
-1. Verifica que los stacks `iot` y `backend/streaming` terminaron con
+1. Verifica que los stacks `iot` y `streaming/serverless` terminaron con
    `Service deployed`.
-2. En el contenedor backend, provisiona un sensor de prueba. Esto crea el
+2. En el contenedor del flujo streaming, provisiona un sensor de prueba. Esto crea el
    Thing, el certificado y sus claves locales:
 
 ```bash
-docker exec -w /app/backend/tests/sensor_readings \
- CoffeeCultivationBackend ./provision_sensor.sh sensor-001
+docker exec -w /app/streaming/tests/sensor_readings \
+ CoffeeCultivation ./provision_sensor.sh sensor-001
 ```
 
 1. Publica una lectura válida usando el certificado mTLS:
 
 ```bash
-docker exec -w /app/backend/tests/sensor_readings \
- CoffeeCultivationBackend ./send_sensor_reading.sh sensor-001
+docker exec -w /app/streaming/tests/sensor_readings \
+ CoffeeCultivation ./send_sensor_reading.sh sensor-001
 ```
 
 El payload por defecto es
-`backend/tests/fixtures/sensor_readings/valid_reading.json`. Para probar
+`streaming/tests/fixtures/sensor_readings/valid_reading.json`. Para probar
 una lectura concreta, pasa su archivo como segundo argumento:
 
 ```bash
-docker exec -w /app/backend/tests/sensor_readings \
- CoffeeCultivationBackend ./send_sensor_reading.sh sensor-001 \
+docker exec -w /app/streaming/tests/sensor_readings \
+ CoffeeCultivation ./send_sensor_reading.sh sensor-001 \
  ../fixtures/sensor_readings/valid_reading.json
 ```
 
 1. Revisa los logs de la Lambda para confirmar la persistencia:
 
 ```bash
-docker exec CoffeeCultivationBackend aws logs tail \
- /aws/lambda/${DEPLOY_APP}-backend-streaming-PersistSensorReading --follow
+docker exec CoffeeCultivation aws logs tail \
+ /aws/lambda/${DEPLOY_APP}-streaming-PersistSensorReading --follow
 ```
 
 Para una prueba negativa, usa `invalid_location.json` o
@@ -409,17 +415,17 @@ Si `serverless deploy` falla con un error como `EACCES: permission denied, mkdir
 ```bash
 # Ejecuta esto desde la máquina host
 # (no dentro del contenedor, porque no tiene acceso a 'docker' como comando)
-docker exec -u root CoffeeCultivationBackend sh -lc 'chown -R aaccode:aaccode /usr/local/lib/node_modules && chmod -R u+rwX /usr/local/lib/node_modules/serverless'
+docker exec -u root CoffeeCultivation sh -lc 'chown -R aaccode:aaccode /usr/local/lib/node_modules && chmod -R u+rwX /usr/local/lib/node_modules/serverless'
 
 # Verifica que ya funciona
-docker exec CoffeeCultivationBackend sh -lc 'serverless --version'
+docker exec CoffeeCultivation sh -lc 'serverless --version'
 ```
 
 Si ves errores al instalar layers:
 
 ```bash
 # Ejecuta dentro del contenedor como sudo
-docker exec -u root CoffeeCultivationBackend chown -R coffee-cultivation /usr/local/lib/python3.13/site-packages/
+docker exec -u root CoffeeCultivation chown -R coffee-cultivation /usr/local/lib/python3.13/site-packages/
 ```
 
 ### Error de SSM no resuelto en `custom.sqs.*`
@@ -433,7 +439,7 @@ Cannot resolve '${ssm:/coffee-cultivation-queue/CoffeeBatchQueueUrl}' variable a
 significa que la infraestructura aún no fue desplegada. Revisa primero los stacks de `infrastructure/serverless` y luego vuelve a ejecutar el deploy del `batch`.
 
 ```bash
-docker exec CoffeeCultivationInfrastructure aws ssm get-parameter --name "/coffee-cultivation-queue/CoffeeBatchQueueUrl" --query "Parameter.Value" --output text
+docker exec CoffeeCultivation aws ssm get-parameter --name "/coffee-cultivation-queue/CoffeeBatchQueueUrl" --query "Parameter.Value" --output text
 ```
 
 Si el comando devuelve una URL, entonces el parámetro SSM ya existe y el deploy del batch puede continuar.
@@ -453,14 +459,14 @@ docker compose -f backend/.docker/docker-compose.yml up -d --force-recreate
 Comprueba que las credenciales quedaron disponibles sin imprimir sus valores:
 
 ```bash
-docker exec CoffeeCultivationBackend aws sts get-caller-identity
+docker exec CoffeeCultivation aws sts get-caller-identity
 ```
 
 Si devuelve la identidad de la cuenta AWS, repite el despliegue del batch:
 
 ```bash
-docker exec -w /app/backend/serverless/batch \
- CoffeeCultivationBackend serverless deploy --stage dev
+docker exec -w /app/batch/serverless \
+ CoffeeCultivation serverless deploy --stage dev
 ```
 
 ### MongoDB Atlas no disponible
@@ -480,18 +486,18 @@ Edita archivos normalmente en tu IDE local; los cambios se reflejan en el conten
 ### 2. Validar
 
 ```bash
-docker exec -w /app/backend CoffeeCultivationBackend python3 -m compileall src/
-docker exec -w /app/infrastructure CoffeeCultivationInfrastructure cfn-lint serverless/**/*.yml
+docker exec -w /app/batch CoffeeCultivation python3 -m compileall src/
+docker exec -w /app/streaming CoffeeCultivation cfn-lint serverless/**/*.yml
 ```
 
 ### 3. Probar localmente
 
 ```bash
 # Seed de base de datos (solo dev/test)
-docker exec -w /app/backend CoffeeCultivationBackend ./database/seeders/seed.sh --historical-data 100 --sensor-readings 500
+docker exec -w /app/batch CoffeeCultivation ./database/seeders/seed.sh --historical-data 100 --sensor-readings 500
 
 # Ver migraciones
-docker exec -w /app/backend CoffeeCultivationBackend python3 -m database.demo_indexes
+docker exec -w /app/streaming CoffeeCultivation python3 -m database.demo_indexes
 ```
 
 ### 4. Desplegar

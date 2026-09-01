@@ -1,2 +1,4 @@
 LON,LAT,YEAR,MM,DD,DOY,Date,Temp_Max,Temp_Min,Humidity,Solar_Radiation,Precipitation_mm,Location,Close_USD_60kg,Is_Weekend,Is_Interpolated,brl,cny,mxn
 -75.68,4.53,2026,8,23,234,2026-08-23,25,17,70,500,2,Armenia,160,false,false,5,7,18
+-75.68,4.53,2026,8,23,234,2026-08-23,25,17,70,500,2,Armenia,160,false,false,5,7,18
+-75.6,4.53,2026,8,23,234,2026-08-23,25,17,70,500,2,Armenia,160,false,false,5,7,18
