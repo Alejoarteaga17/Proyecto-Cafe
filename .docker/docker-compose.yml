@@ -1,0 +1,19 @@
+services:
+  coffee-cultivation:
+    container_name: 'CoffeeCultivation'
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: img-root
+    volumes:
+      - ..:/app
+      - coffee-cultivation-bashhistory:/commandhistory
+    working_dir: /app
+    restart: unless-stopped
+    command:
+      - /bin/sh
+      - -c
+      - sleep infinity
+
+volumes:
+  coffee-cultivation-bashhistory:

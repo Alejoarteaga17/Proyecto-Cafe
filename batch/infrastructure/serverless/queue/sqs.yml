@@ -1,0 +1,30 @@
+Resources:
+  CoffeeBatchDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: ${self:custom.queue.coffeeBatch.dlqName.${self:custom.stage}}
+      MessageRetentionPeriod: 1209600 # 14 days
+
+  CoffeeBatchQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: ${self:custom.queue.coffeeBatch.name.${self:custom.stage}}
+      VisibilityTimeout: ${self:custom.queue.coffeeBatch.visibilityTimeout}
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt CoffeeBatchDLQ.Arn
+        maxReceiveCount: ${self:custom.queue.coffeeBatch.maxReceiveCount}
+
+  SensorReadingsDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: ${self:custom.queue.sensorReadings.dlqName.${self:custom.stage}}
+      MessageRetentionPeriod: 1209600 # 14 days
+
+  SensorReadingsQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: ${self:custom.queue.sensorReadings.name.${self:custom.stage}}
+      VisibilityTimeout: ${self:custom.queue.sensorReadings.visibilityTimeout}
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt SensorReadingsDLQ.Arn
+        maxReceiveCount: ${self:custom.queue.sensorReadings.maxReceiveCount}

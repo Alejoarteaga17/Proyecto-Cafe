@@ -1,0 +1,27 @@
+# Local configuration and credentials
+.env
+.env.*
+!.envs/*.example
+.envs/*
+!.envs/.gitignore
+batch/.envs/*
+!batch/.envs/.gitignore
+!batch/.envs/*.example
+streaming/.envs/*
+!streaming/.envs/.gitignore
+!streaming/.envs/*.example
+
+# Local and generated files
+.DS_Store
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+
+# Docker, Serverless and local tooling artifacts
+.serverless/
+*.serverless
+.vscode/
+node_modules/
+batch/tests/sensor_readings/certs/
+streaming/tests/sensor_readings/certs/
