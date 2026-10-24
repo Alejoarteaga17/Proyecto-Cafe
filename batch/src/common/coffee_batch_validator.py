@@ -69,27 +69,31 @@ def validate_row(row, row_number=None):
         else:
             values[column] = number
 
-    if values.get('YEAR') is not None and not 1900 <= values['YEAR'] <= 2100:
+    if isinstance(values.get('YEAR'), int) and not 1900 <= values['YEAR'] <= 2100:
         errors.append(f'{prefix}"YEAR" is outside the supported range')
-    if values.get('MM') is not None and not 1 <= values['MM'] <= 12:
+    if isinstance(values.get('MM'), int) and not 1 <= values['MM'] <= 12:
         errors.append(f'{prefix}"MM" must be between 1 and 12')
-    if values.get('DD') is not None and not 1 <= values['DD'] <= 31:
+    if isinstance(values.get('DD'), int) and not 1 <= values['DD'] <= 31:
         errors.append(f'{prefix}"DD" must be between 1 and 31')
-    if values.get('DOY') is not None and not 1 <= values['DOY'] <= 366:
+    if isinstance(values.get('DOY'), int) and not 1 <= values['DOY'] <= 366:
         errors.append(f'{prefix}"DOY" must be between 1 and 366')
-    if values.get('Temp_Min') is not None and values.get('Temp_Max') is not None:
+    if (isinstance(values.get('Temp_Min'), float)
+            and isinstance(values.get('Temp_Max'), float)):
         if values['Temp_Min'] > values['Temp_Max']:
             errors.append(f'{prefix}"Temp_Min" cannot exceed "Temp_Max"')
-    if values.get('Humidity') is not None and not 0 <= values['Humidity'] <= 100:
+    if (isinstance(values.get('Humidity'), float)
+            and not 0 <= values['Humidity'] <= 100):
         errors.append(f'{prefix}"Humidity" must be between 0 and 100')
-    if values.get('Solar_Radiation') is not None and values['Solar_Radiation'] < 0:
+    if (isinstance(values.get('Solar_Radiation'), float)
+            and values['Solar_Radiation'] < 0):
         errors.append(f'{prefix}"Solar_Radiation" cannot be negative')
-    if values.get('Precipitation_mm') is not None and values['Precipitation_mm'] < 0:
+    if (isinstance(values.get('Precipitation_mm'), float)
+            and values['Precipitation_mm'] < 0):
         errors.append(f'{prefix}"Precipitation_mm" cannot be negative')
     if not isinstance(values.get('Location'), str) or not values['Location']:
         errors.append(f'{prefix}"Location" cannot be empty')
     for column in ('Close_USD_60kg', 'brl', 'cny', 'mxn'):
-        if values.get(column) is not None and values[column] < 0:
+        if isinstance(values.get(column), float) and values[column] < 0:
             errors.append(f'{prefix}"{column}" cannot be negative')
 
     if errors:

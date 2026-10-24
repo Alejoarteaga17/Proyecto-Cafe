@@ -2,7 +2,7 @@
 
 ## Resumen
 
-`batch` contiene el pipeline de ingestión histórica del proyecto de café: validación de datos, particionado, almacenamiento y persistencia del flujo por lote.
+`batch` contiene la ingestión histórica y los jobs del data lake del proyecto de café. La ruta aprobada es API Gateway -> Lambda -> S3 Bronze -> Glue -> Silver/Gold.
 
 El pipeline está desplegado como varios stacks independientes bajo `serverless/` y usa su infraestructura propia dentro de `batch/infrastructure`.
 
@@ -21,17 +21,9 @@ Crea los archivos en `.envs` con los valores requeridos por AWS, Serverless y el
 
 El usuario de Serverless debe tener permisos IAM adecuados en la cuenta de AWS y sus credenciales deben configurarse desde `.envs/aws.env`.
 
-### Migraciones de base de datos
+### Código legacy
 
-Para aplicar migraciones, usa `database/migrations/migrate.sh`.
-
-Si necesitas revertir, añade `--downgrade`.
-
-### Sembrado de datos
-
-Para poblar MongoDB Atlas con datos sintéticos realistas, usa `database/seeders/seed.sh`.
-
-Solo se permite en `dev` y `test`, verificando la etiqueta `STAGE` del secreto `MongoCredentials`.
+`database/`, `src/validate_and_persist`, `src/persist_sensor_reading` y los stacks SQS/MongoDB son `LEGACY`. No son necesarios para el flujo aprobado y no deben desplegarse como parte de una nueva instalación.
 
 ### Despliegue
 
@@ -40,11 +32,12 @@ Se usa Serverless Framework y cada stack vive dentro de `serverless/` y `infrast
 Orden recomendado:
 
 1. `infrastructure/serverless/storage`
-2. `infrastructure/serverless/queue`
-3. `infrastructure/serverless/secrets`
-4. `serverless`
-5. Migraciones
-6. Seeders opcionales
+2. `infrastructure/serverless/iot`
+3. Publica los scripts Glue con `glue/publish-scripts.ps1 -BucketName <bucket>`.
+4. `infrastructure/serverless/data-platform`
+5. `serverless`
+
+Valida primero con `serverless print --stage dev` y despliega solo con autorización explícita.
 
 ### Eliminación
 

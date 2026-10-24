@@ -20,6 +20,6 @@ La lógica del frontend convierte el CSV a base64 antes del `POST`, igual que el
 
 La página solo sirve para pruebas rápidas y no reemplaza ni modifica la arquitectura del backend ni la infraestructura AWS del proyecto.
 
-## Consumo de MongoDB
+## Alcance
 
-Para empezar a visualizar datos guardados en MongoDB, la mejor práctica es crear primero un endpoint del backend que consulte MongoDB y devuelva JSON al frontend. Esto evita exponer credenciales en el navegador y mantiene la arquitectura segura.
+La interfaz solo prueba la carga histórica hacia API Gateway. El consumo analítico mediante Athena y QuickSight está reservado para el sprint final; no se conecta a MongoDB ni expone credenciales.

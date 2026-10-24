@@ -1,4 +1,6 @@
-# Sensor reading fixtures
+# Sensor reading fixtures (LEGACY)
+
+Estas fixtures pertenecen al flujo anterior MQTT -> SQS -> Lambda -> MongoDB. Se conservan para trazabilidad histórica y no validan el flujo aprobado IoT Core -> Data Firehose -> S3 Bronze.
 
 Payloads de ejemplo para el pipeline de sensores del cultivo. Puedes publicarlos desde la consola de IoT Core o usando el cliente MQTT real con certificado mTLS.
 

@@ -1,5 +1,7 @@
 # Docker Setup Guide - Cultivo de Café Inteligente
 
+> **Nota de arquitectura:** este documento conserva comandos históricos para referencia. No ejecutes los pasos de `streaming/`, MongoDB, SQS, DLQ o SNS: esas rutas son `LEGACY`. Para el flujo aprobado usa `batch/infrastructure/serverless/storage`, `batch/infrastructure/serverless/iot`, `batch/infrastructure/serverless/data-platform` y `batch/serverless`, después de validar con `serverless print`.
+
 Esta guía explica cómo configurar el entorno Dockerizado para trabajar en el proyecto de **Cultivo de Café Inteligente**.
 
 ## Requisitos previos

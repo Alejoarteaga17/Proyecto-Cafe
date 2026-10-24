@@ -6,7 +6,10 @@ import json
 import os
 import uuid
 
-import boto3
+try:
+    import boto3
+except ModuleNotFoundError:  # Local tests can inject an S3 client stub.
+    boto3 = None
 
 REQUIRED_COLUMNS = [
     'LON',
@@ -42,10 +45,17 @@ DEFAULT_IMPUTATIONS = {
     'mxn': 1.0,
 }
 
-s3_client = boto3.client('s3')
 
-RAW_REPORTS_BUCKET_NAME = os.environ.get('RAW_REPORTS_BUCKET_NAME') or os.environ.get(
-    'SILVER_BUCKET_NAME') or 'coffee-data-lake-silver'
+
+class _UnavailableS3Client:
+    def put_object(self, **kwargs):
+        raise RuntimeError('boto3 is required to upload to S3')
+
+
+s3_client = boto3.client('s3') if boto3 else _UnavailableS3Client()
+
+BRONZE_BUCKET_NAME = os.environ.get('BRONZE_BUCKET_NAME', 'coffee-data-lake-bronze')
+MAX_FILE_BYTES = 5 * 1024 * 1024
 
 
 def handler(event, context):
@@ -68,6 +78,10 @@ def handler(event, context):
         return _response(400, {
             'message': '"file" is not valid base64'
         })
+    if not file_bytes or len(file_bytes) > MAX_FILE_BYTES:
+        return _response(413, {
+            'message': 'CSV file must be non-empty and no larger than 5 MiB'
+        })
 
     try:
         text = file_bytes.decode('utf-8-sig')
@@ -78,9 +92,9 @@ def handler(event, context):
             'errors': [str(error)],
         })
 
-    report_key = f'silver/uploads/{uuid.uuid4()}.csv'
+    report_key = f'bronze/historical/ingested_at={uuid.uuid4()}/{uuid.uuid4()}.csv'
     s3_client.put_object(
-        Bucket=RAW_REPORTS_BUCKET_NAME,
+        Bucket=BRONZE_BUCKET_NAME,
         Key=report_key,
         Body=text.encode('utf-8'),
         ContentType='text/csv',

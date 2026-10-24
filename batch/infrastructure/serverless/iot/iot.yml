@@ -50,8 +50,10 @@ Resources:
             Version: '2012-10-17'
             Statement:
               - Effect: Allow
-                Action: sqs:SendMessage
-                Resource: ${self:custom.sqs.sensorReadings.arn}
+                Action:
+                  - firehose:PutRecord
+                  - firehose:PutRecordBatch
+                Resource: !GetAtt SensorFirehose.Arn
 
   SensorReadingsTopicRule:
     Type: AWS::IoT::TopicRule
@@ -70,7 +72,52 @@ Resources:
         AwsIotSqlVersion: '2016-03-23'
         RuleDisabled: false
         Actions:
-          - Sqs:
-              QueueUrl: ${self:custom.sqs.sensorReadings.url}
+          - Firehose:
+              DeliveryStreamName: !Ref SensorFirehose
               RoleArn: !GetAtt SensorReadingsTopicRuleRole.Arn
-              UseBase64: false
+              Separator: '\n'
+
+  SensorFirehose:
+    Type: AWS::KinesisFirehose::DeliveryStream
+    Properties:
+      DeliveryStreamType: DirectPut
+      ExtendedS3DestinationConfiguration:
+        BucketARN: ${self:custom.s3.dataLakeBucket.arn}
+        RoleARN: !GetAtt FirehoseDeliveryRole.Arn
+        Prefix: bronze/iot/year=!{timestamp:yyyy}/month=!{timestamp:MM}/day=!{timestamp:dd}/
+        ErrorOutputPrefix: bronze/iot-errors/!{firehose:error-output-type}/
+        BufferingHints:
+          IntervalInSeconds: 60
+          SizeInMBs: 5
+        CompressionFormat: GZIP
+
+  FirehoseDeliveryRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: ${self:custom.servicePrefix}-FirehoseDelivery
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: firehose.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: ${self:custom.servicePrefix}-FirehoseS3
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:AbortMultipartUpload
+                  - s3:GetBucketLocation
+                  - s3:ListBucket
+                  - s3:ListBucketMultipartUploads
+                Resource: ${self:custom.s3.dataLakeBucket.arn}
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:PutObjectAcl
+                Resource:
+                  - ${self:custom.s3.dataLakeBucket.arn}/bronze/iot/*
+                  - ${self:custom.s3.dataLakeBucket.arn}/bronze/iot-errors/*

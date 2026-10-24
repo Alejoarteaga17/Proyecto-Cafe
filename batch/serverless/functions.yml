@@ -8,54 +8,10 @@ ValidateAndStore:
     patterns:
       - ../../src/common/**
       - ../../src/validate_and_store/**
-  layers:
-    - ${self:custom.layers.commons}
   environment:
-    RAW_REPORTS_BUCKET_NAME: ${self:custom.s3.rawReportsBucket.name}
+    BRONZE_BUCKET_NAME: ${self:custom.s3.dataLakeBucket.name}
   events:
     - http:
         path: /coffee-historical-data
         method: post
         private: true
-
-SplitAndEnqueue:
-  name: ${self:custom.servicePrefix}-SplitAndEnqueue
-  handler: src/split_and_enqueue/handler.handler
-  role: !GetAtt SplitAndEnqueueRole.Arn
-  timeout: 60
-  memorySize: 256
-  package:
-    patterns:
-      - ../../src/common/**
-      - ../../src/split_and_enqueue/**
-  layers:
-    - ${self:custom.layers.commons}
-  environment:
-    COFFEE_BATCH_QUEUE_URL: ${self:custom.sqs.coffeeBatch.url}
-  events:
-    - s3:
-        bucket: ${self:custom.s3.rawReportsBucket.name}
-        event: s3:ObjectCreated:*
-        rules:
-          - prefix: silver/uploads/
-        existing: true
-
-ValidateAndPersist:
-  name: ${self:custom.servicePrefix}-ValidateAndPersist
-  handler: src/validate_and_persist/handler.handler
-  role: !GetAtt ValidateAndPersistRole.Arn
-  timeout: 15
-  memorySize: 256
-  package:
-    patterns:
-      - ../../src/common/**
-      - ../../src/validate_and_persist/**
-  layers:
-    - ${self:custom.layers.mongo}
-  environment:
-    MONGO_CREDENTIALS_SECRET_NAME: ${self:custom.secretsManager.mongoCredentials}
-    COFFEE_BATCH_DLQ_URL: ${self:custom.sqs.coffeeBatchDLQ.url}
-  events:
-    - sqs:
-        arn: ${self:custom.sqs.coffeeBatch.arn}
-        batchSize: 1

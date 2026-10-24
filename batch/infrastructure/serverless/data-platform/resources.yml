@@ -1,0 +1,258 @@
+Resources:
+  GlueJobRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: ${self:service}-glue-${sls:stage}
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: glue.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSGlueServiceRole
+      Policies:
+        - PolicyName: ${self:service}-glue-data-lake
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:ListBucket
+                Resource:
+                  - arn:aws:s3:::${self:custom.bucketName}
+                  - arn:aws:s3:::${self:custom.bucketName}/*
+
+  StepFunctionsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: ${self:service}-step-functions-${sls:stage}
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: states.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: ${self:service}-start-glue
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - glue:StartJobRun
+                  - glue:GetJobRun
+                  - glue:GetJobRuns
+                Resource:
+                  - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:job/${self:service}-bronze-to-silver-${sls:stage}
+                  - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:job/${self:service}-silver-to-gold-${sls:stage}
+
+  GlueDatabase:
+    Type: AWS::Glue::Database
+    Properties:
+      CatalogId: !Ref AWS::AccountId
+      DatabaseInput:
+        Name: ${self:custom.databaseName}
+        Description: Coffee cultivation medallion datasets
+
+  BronzeToSilverJob:
+    Type: AWS::Glue::Job
+    Properties:
+      Name: ${self:service}-bronze-to-silver-${sls:stage}
+      Role: !GetAtt GlueJobRole.Arn
+      GlueVersion: '4.0'
+      WorkerType: G.1X
+      NumberOfWorkers: 2
+      Command:
+        Name: glueetl
+        PythonVersion: '3'
+        ScriptLocation: s3://${self:custom.glueScriptBucket}/glue/job_bronze_to_silver.py
+      DefaultArguments:
+        '--job-language': python
+        '--extra-py-files': s3://${self:custom.glueScriptBucket}/glue/coffee-pipeline.zip
+        '--input_path': s3://${self:custom.bucketName}/bronze/
+        '--output_path': s3://${self:custom.bucketName}/silver/historical/
+        '--rejected_path': s3://${self:custom.bucketName}/silver/rejected/
+        '--duplicate_path': s3://${self:custom.bucketName}/silver/duplicates/
+
+  SilverToGoldJob:
+    Type: AWS::Glue::Job
+    Properties:
+      Name: ${self:service}-silver-to-gold-${sls:stage}
+      Role: !GetAtt GlueJobRole.Arn
+      GlueVersion: '4.0'
+      WorkerType: G.1X
+      NumberOfWorkers: 2
+      Command:
+        Name: glueetl
+        PythonVersion: '3'
+        ScriptLocation: s3://${self:custom.glueScriptBucket}/glue/job_silver_to_gold.py
+      DefaultArguments:
+        '--job-language': python
+        '--extra-py-files': s3://${self:custom.glueScriptBucket}/glue/coffee-pipeline.zip
+        '--input_path': s3://${self:custom.bucketName}/silver/historical/
+        '--output_path': s3://${self:custom.bucketName}/gold/historical/
+
+  GoldWorkGroup:
+    Type: AWS::Athena::WorkGroup
+    Properties:
+      Name: ${self:service}-gold-${sls:stage}
+      State: ENABLED
+      WorkGroupConfiguration:
+        ResultConfiguration:
+          OutputLocation: s3://${self:custom.bucketName}/athena-results/
+        EngineVersion:
+          SelectedEngineVersion: Athena engine version 3
+
+  EtlStateMachine:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      RoleArn: !GetAtt StepFunctionsRole.Arn
+      DefinitionString: !Sub
+        - |-
+          {
+            "StartAt": "BronzeToSilver",
+            "States": {
+              "BronzeToSilver": {
+                "Type": "Task",
+                "Resource": "arn:aws:states:::glue:startJobRun.sync",
+                "Parameters": {"JobName": "${BronzeJob}"},
+                "Retry": [{"ErrorEquals": ["States.ALL"], "MaxAttempts": 2, "BackoffRate": 2, "IntervalSeconds": 30}],
+                "Next": "SilverToGold",
+                "Catch": [{"ErrorEquals": ["States.ALL"], "Next": "Failed"}]
+              },
+              "SilverToGold": {
+                "Type": "Task",
+                "Resource": "arn:aws:states:::glue:startJobRun.sync",
+                "Parameters": {"JobName": "${GoldJob}"},
+                "Retry": [{"ErrorEquals": ["States.ALL"], "MaxAttempts": 2, "BackoffRate": 2, "IntervalSeconds": 30}],
+                "End": true,
+                "Catch": [{"ErrorEquals": ["States.ALL"], "Next": "Failed"}]
+              },
+              "Failed": {"Type": "Fail", "Error": "EtlFailed"}
+            }
+          }
+        - BronzeJob: !Ref BronzeToSilverJob
+          GoldJob: !Ref SilverToGoldJob
+
+  HistoricalGoldTable:
+    Type: AWS::Glue::Table
+    Properties:
+      CatalogId: !Ref AWS::AccountId
+      DatabaseName: !Ref GlueDatabase
+      TableInput:
+        Name: coffee_historical_gold
+        TableType: EXTERNAL_TABLE
+        Parameters:
+          classification: parquet
+        StorageDescriptor:
+          Location: s3://${self:custom.bucketName}/gold/historical/
+          InputFormat: org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat
+          OutputFormat: org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat
+          SerdeInfo:
+            SerializationLibrary: org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe
+          Columns:
+            - {Name: Location, Type: string}
+            - {Name: record_count, Type: bigint}
+            - {Name: avg_temp_max, Type: double}
+            - {Name: avg_temp_min, Type: double}
+            - {Name: avg_humidity, Type: double}
+            - {Name: total_precipitation_mm, Type: double}
+            - {Name: avg_solar_radiation, Type: double}
+            - {Name: avg_close_usd_60kg, Type: double}
+          PartitionKeys:
+            - {Name: YEAR, Type: int}
+            - {Name: MM, Type: int}
+
+  HistoricalSilverTable:
+    Type: AWS::Glue::Table
+    Properties:
+      CatalogId: !Ref AWS::AccountId
+      DatabaseName: !Ref GlueDatabase
+      TableInput:
+        Name: coffee_historical_silver
+        TableType: EXTERNAL_TABLE
+        Parameters:
+          classification: json
+        StorageDescriptor:
+          Location: s3://${self:custom.bucketName}/silver/historical/
+          InputFormat: org.apache.hadoop.mapred.TextInputFormat
+          OutputFormat: org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat
+          SerdeInfo:
+            SerializationLibrary: org.openx.data.jsonserde.JsonSerDe
+          Columns:
+            - {Name: LON, Type: double}
+            - {Name: LAT, Type: double}
+            - {Name: DD, Type: int}
+            - {Name: DOY, Type: int}
+            - {Name: Date, Type: string}
+            - {Name: Temp_Max, Type: double}
+            - {Name: Temp_Min, Type: double}
+            - {Name: Humidity, Type: double}
+            - {Name: Solar_Radiation, Type: double}
+            - {Name: Precipitation_mm, Type: double}
+            - {Name: Location, Type: string}
+            - {Name: Close_USD_60kg, Type: double}
+            - {Name: Is_Weekend, Type: string}
+            - {Name: Is_Interpolated, Type: string}
+            - {Name: brl, Type: double}
+            - {Name: cny, Type: double}
+            - {Name: mxn, Type: double}
+          PartitionKeys:
+            - {Name: YEAR, Type: int}
+            - {Name: MM, Type: int}
+
+  HistoricalBronzeTable:
+    Type: AWS::Glue::Table
+    Properties:
+      CatalogId: !Ref AWS::AccountId
+      DatabaseName: !Ref GlueDatabase
+      TableInput:
+        Name: coffee_historical_bronze
+        TableType: EXTERNAL_TABLE
+        Parameters:
+          classification: csv
+          skip.header.line.count: '1'
+        StorageDescriptor:
+          Location: s3://${self:custom.bucketName}/bronze/historical/
+          InputFormat: org.apache.hadoop.mapred.TextInputFormat
+          OutputFormat: org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat
+          SerdeInfo:
+            SerializationLibrary: org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe
+            Parameters:
+              field.delim: ','
+          Columns:
+            - {Name: LON, Type: string}
+            - {Name: LAT, Type: string}
+            - {Name: YEAR, Type: string}
+            - {Name: MM, Type: string}
+            - {Name: DD, Type: string}
+            - {Name: DOY, Type: string}
+            - {Name: Date, Type: string}
+            - {Name: Temp_Max, Type: string}
+            - {Name: Temp_Min, Type: string}
+            - {Name: Humidity, Type: string}
+            - {Name: Solar_Radiation, Type: string}
+            - {Name: Precipitation_mm, Type: string}
+            - {Name: Location, Type: string}
+            - {Name: Close_USD_60kg, Type: string}
+            - {Name: Is_Weekend, Type: string}
+            - {Name: Is_Interpolated, Type: string}
+            - {Name: brl, Type: string}
+            - {Name: cny, Type: string}
+            - {Name: mxn, Type: string}
+
+Outputs:
+  StateMachineArn:
+    Description: ETL Step Functions state machine ARN
+    Value: !Ref EtlStateMachine
+  GlueDatabaseName:
+    Description: Glue Data Catalog database
+    Value: !Ref GlueDatabase
+  AthenaWorkGroupName:
+    Description: Athena workgroup for Gold queries
+    Value: !Ref GoldWorkGroup
