@@ -134,7 +134,10 @@ def _response(status_code, body):
     return {
         'statusCode': status_code,
         'headers': {
-            'Content-Type': 'application/json'
+            'Access-Control-Allow-Headers': 'Content-Type,X-Api-Key',
+            'Access-Control-Allow-Methods': 'OPTIONS,POST',
+            'Access-Control-Allow-Origin': '*',
+            'Content-Type': 'application/json',
         },
         'body': json.dumps(body),
     }

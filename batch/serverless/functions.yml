@@ -15,3 +15,18 @@ ValidateAndStore:
         path: /coffee-historical-data
         method: post
         private: true
+        cors: true
+
+Cors:
+  name: ${self:custom.servicePrefix}-Cors
+  handler: src/validate_and_store/cors_handler.handler
+  timeout: 5
+  memorySize: 128
+  package:
+    patterns:
+    - ../src/validate_and_store/**
+  events:
+    - http:
+        path: /coffee-historical-data
+        method: options
+        private: false

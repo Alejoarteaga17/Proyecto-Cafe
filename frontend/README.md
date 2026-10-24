@@ -1,24 +1,29 @@
-# Frontend de prueba para carga de CSV
+# Frontend de prueba para publicar un CSV
 
-Esta carpeta contiene una mini interfaz para enviar un archivo CSV al endpoint de validación batch del backend.
+Esta carpeta contiene una interfaz mínima para arrastrar un CSV local hacia el
+endpoint de validación batch.
 
 ## Cómo usarla
 
-1. Abre el archivo `frontend/index.html` directamente en el navegador o sirve la carpeta con un pequeño servidor local.
-2. Reemplaza estas dos constantes con tus valores reales:
+1. Sirve la carpeta con un servidor local:
 
-```js
-const API_URL = 'https://<api-id>.execute-api.us-east-1.amazonaws.com/dev/coffee-historical-data';
-const API_KEY = 'COLOCA_AQUI_LA_API_KEY_GENERADA_POR_EL_BACKEND';
+```bash
+python3 -m http.server 8080 --directory frontend
 ```
 
-3. Selecciona un CSV y pulsa **Enviar al backend**.
+2. Abre `http://localhost:8080`.
+3. Arrastra el CSV a la zona de carga o haz clic para seleccionarlo.
+4. Confirma la URL de API Gateway.
+5. Pega la API Key temporalmente en el campo correspondiente.
+6. Pulsa **Publicar CSV**.
 
 ## Nota importante
 
-La lógica del frontend convierte el CSV a base64 antes del `POST`, igual que el backend espera recibir el campo `file`.
+El frontend lee el archivo local como bytes, lo convierte a Base64 y envía un
+`POST` con el campo `file`, que es el formato esperado por Lambda.
 
-La página solo sirve para pruebas rápidas y no reemplaza ni modifica la arquitectura del backend ni la infraestructura AWS del proyecto.
+La página solo sirve para pruebas rápidas y no reemplaza ni modifica la
+arquitectura del backend ni la infraestructura AWS del proyecto.
 
 ## Alcance
 
