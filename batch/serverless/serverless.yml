@@ -7,7 +7,6 @@ provider:
   stage: dev
   region: us-east-1
   runtime: python3.13
-  architecture: ${file(../architecture.js):get}
   stackName: ${env:DEPLOY_APP, 'coffee-cultivation'}-${self:service}
   deploymentBucket:
     name: ${self:custom.s3.deploymentBucketName.${self:custom.stage}}
@@ -58,18 +57,6 @@ custom:
       dev: ${self:provider.region}-cfn-${self:service}-${self:custom.stage}-${self:custom.developer}-deploys
       test: ${self:provider.region}-cfn-${self:service}-${self:custom.stage}-deploys
       prod: ${self:provider.region}-cfn-${self:service}-${self:custom.stage}-deploys
-    rawReportsBucket:
+    dataLakeBucket:
       name: ${ssm:/${env:DEPLOY_APP, 'coffee-cultivation'}-storage/RawReportsBucketName}
       arn: ${ssm:/${env:DEPLOY_APP, 'coffee-cultivation'}-storage/RawReportsBucketArn}
-  layers:
-    commons: ${ssm:/${env:DEPLOY_APP, 'coffee-cultivation'}-backend-layers/CommonsLayerArn}
-    mongo: ${ssm:/${env:DEPLOY_APP, 'coffee-cultivation'}-backend-layers/MongoLayerArn}
-  sqs:
-    coffeeBatch:
-      url: ${ssm:/${env:DEPLOY_APP, 'coffee-cultivation'}-queue/CoffeeBatchQueueUrl}
-      arn: ${ssm:/${env:DEPLOY_APP, 'coffee-cultivation'}-queue/CoffeeBatchQueueArn}
-    coffeeBatchDLQ:
-      url: ${ssm:/${env:DEPLOY_APP, 'coffee-cultivation'}-queue/CoffeeBatchDLQUrl}
-      arn: ${ssm:/${env:DEPLOY_APP, 'coffee-cultivation'}-queue/CoffeeBatchDLQArn}
-  secretsManager:
-    mongoCredentials: /${env:DEPLOY_APP, 'coffee-cultivation'}-secrets/MongoCredentials

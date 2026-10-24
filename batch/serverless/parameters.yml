@@ -1,16 +1,16 @@
 Resources:
-  SplitAndEnqueueLambdaName:
+  GenerateUploadUrlLambdaName:
     Type: AWS::SSM::Parameter
     Properties:
-      Name: !Sub /${AWS::StackName}/SplitAndEnqueueLambdaName
+      Name: !Sub /${AWS::StackName}/GenerateUploadUrlLambdaName
       Tier: Standard
       Type: String
-      Value: ${self:custom.servicePrefix}-SplitAndEnqueue
+      Value: ${self:custom.servicePrefix}-GenerateUploadUrl
 
-  SplitAndEnqueueLambdaArn:
+  GenerateUploadUrlLambdaArn:
     Type: AWS::SSM::Parameter
     Properties:
-      Name: !Sub /${AWS::StackName}/SplitAndEnqueueLambdaArn
+      Name: !Sub /${AWS::StackName}/GenerateUploadUrlLambdaArn
       Tier: Standard
       Type: String
-      Value: !GetAtt SplitAndEnqueueLambdaFunction.Arn
+      Value: !GetAtt GenerateUploadUrlLambdaFunction.Arn

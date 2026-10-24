@@ -2,7 +2,17 @@
 
 ## Resumen
 
-`infrastructure` contiene los stacks compartidos de AWS del proyecto de café: almacenamiento S3, colas SQS con DLQ, secretos de MongoDB Atlas, IoT Core y alertas operativas.
+`infrastructure` contiene los stacks compartidos de AWS del proyecto de café: el data lake S3, colas SQS con DLQ, secretos de MongoDB Atlas, IoT Core y alertas operativas.
+
+El bucket compartido de S3 funciona como data lake para los flujos históricos y streaming. Sus zonas lógicas son:
+
+```text
+bronze/  # datos recibidos, sin transformación
+silver/  # datos validados, limpios y particionados
+gold/    # datos agregados para analítica
+```
+
+Las zonas son prefijos dentro del mismo bucket para conservar un único punto de administración, cifrado, versionado y control de acceso. El stack no crea tres buckets distintos porque la separación lógica permite compartir políticas y facilita el gobierno del lago sin duplicar infraestructura.
 
 La arquitectura actual del proyecto no incluye PostgreSQL/RDS ni ETL hacia un motor relacional; MongoDB Atlas y S3 son la base del diseño activo.
 

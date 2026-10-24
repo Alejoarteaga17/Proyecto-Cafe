@@ -2,9 +2,35 @@
 
 ## Resumen
 
-`batch` contiene el pipeline de ingestión histórica del proyecto de café: validación de datos, particionado, almacenamiento y persistencia del flujo por lote.
+`batch` contiene el pipeline de ingestión histórica del proyecto de café: carga mediante API, transformación con AWS Glue, particionado y almacenamiento analítico en el data lake S3.
 
 El pipeline está desplegado como varios stacks independientes bajo `serverless/` y usa su infraestructura propia dentro de `batch/infrastructure`.
+
+## Arquitectura del pipeline
+
+```text
+Cliente -> API Gateway -> Lambda de carga -> URL prefirmada -> S3 Bronze
+                                                        |
+                                           Step Functions + Glue
+                                                        |
+                                              S3 Silver -> S3 Gold
+                                                        |
+                                      Glue Data Catalog -> Athena
+```
+
+La API entrega una URL prefirmada de corta duración. La aplicación cliente sube el archivo directamente a S3 usando `PUT`, por lo que el archivo no atraviesa los límites de payload de API Gateway ni la memoria de la Lambda. La URL no restringe el formato por sí misma; el pipeline histórico acepta inicialmente CSV y valida la extensión y el `Content-Type` declarado. JSON, JSONL o Parquet pueden agregarse después mediante lectores específicos en los Glue Jobs.
+
+La estructura propuesta es:
+
+```text
+bronze/historical/YYYY/MM/DD/<uuid>.csv
+silver/historical/year=YYYY/month=MM/location=<location>/
+gold/historical/
+```
+
+Silver se particiona por año, mes y ubicación porque son dimensiones de consulta frecuentes y de cardinalidad controlada: Athena puede leer solo los meses y fincas solicitados, reduciendo lecturas y costo. Gold no se particiona inicialmente porque sus agregados serán mucho más pequeños; se revisará con datos reales antes de añadir particiones.
+
+MongoDB no forma parte del pipeline batch nuevo. S3 conserva las capas Bronze, Silver y Gold; el mismo data lake puede recibir posteriormente los eventos del flujo streaming bajo sus propios prefijos.
 
 ## Configuración
 
@@ -19,7 +45,7 @@ Crea los archivos en `.envs` con los valores requeridos por AWS, Serverless y el
 
 ### Dependencias
 
-El usuario de Serverless debe tener permisos IAM adecuados en la cuenta de AWS y sus credenciales deben configurarse desde `.envs/aws.env`.
+El despliegue requiere AWS CLI, Serverless Framework v4 y un perfil AWS con permisos para CloudFormation, S3, Lambda, API Gateway, Step Functions, Glue, Athena, IAM y CloudWatch Logs. Las credenciales se configuran fuera del repositorio; no deben copiarse al código.
 
 ### Migraciones de base de datos
 
@@ -43,8 +69,7 @@ Orden recomendado:
 2. `infrastructure/serverless/queue`
 3. `infrastructure/serverless/secrets`
 4. `serverless`
-5. Migraciones
-6. Seeders opcionales
+5. Consultas de Athena de validación
 
 ### Eliminación
 
