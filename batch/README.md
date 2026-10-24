@@ -31,9 +31,8 @@ Orden recomendado:
 
 1. `infrastructure/serverless/storage`
 2. Publica los scripts Glue con `glue/publish-scripts.ps1 -BucketName <bucket>`.
-3. `infrastructure/serverless/iot`
-4. `infrastructure/serverless/data-platform`
-5. `serverless`
+3. `infrastructure/serverless/data-platform`
+4. `serverless`
 
 Valida primero con `serverless print --stage dev` y despliega solo con autorización explícita.
 

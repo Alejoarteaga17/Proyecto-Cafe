@@ -12,6 +12,10 @@
 - Reproducible PowerShell publisher for Glue scripts and shared pipeline code.
 - IoT Bronze catalog contract and simulator payloads containing `sensor_id`.
 - Batch upload contract now rejects duplicate and unexpected CSV columns.
+- Streaming simulator now supports finite seeded runs and validates every event
+  against the IoT contract before emitting it.
+- IoT infrastructure now declares the simulator Thing and its SSM name
+  parameter while preserving the direct IoT Core to Firehose to S3 path.
 
 ### Changed
 
@@ -23,6 +27,8 @@
   their source code, infrastructure, fixtures and development dependencies.
 - Batch pipeline marked complete for local/IaC scope; AWS execution remains
   explicitly unverified.
+- Streaming remains AWS-unverified; certificate provisioning and an authorized
+  MQTT integration test are required before claiming end-to-end delivery.
 
 ### Pending
 

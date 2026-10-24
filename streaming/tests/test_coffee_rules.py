@@ -1,4 +1,4 @@
-from src.common.coffee_rules import validate_coffee_reading
+from streaming_src.common.coffee_rules import validate_coffee_reading
 
 
 def _reading():

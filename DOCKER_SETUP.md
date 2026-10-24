@@ -58,9 +58,9 @@ El campo `access_key` debe indicar `env` y la región debe ser `us-east-1`.
 La arquitectura aprobada usa únicamente estos stacks:
 
 1. `/app/batch/infrastructure/serverless/storage`
-2. `/app/batch/infrastructure/serverless/iot`
-3. `/app/batch/infrastructure/serverless/data-platform`
-4. `/app/batch/serverless`
+2. `/app/batch/infrastructure/serverless/data-platform`
+3. `/app/batch/serverless`
+4. `/app/streaming/infrastructure/serverless/iot`
 
 Validar cada stack antes de desplegar:
 
@@ -73,6 +73,13 @@ Publicar los scripts Glue antes del stack `data-platform`:
 ```powershell
 pwsh /app/batch/glue/publish-scripts.ps1 `
   -BucketName <data-lake-bucket> -Region us-east-1
+```
+
+El stack IoT se valida desde:
+
+```bash
+cd /app/streaming/infrastructure/serverless/iot
+serverless print --stage dev
 ```
 
 El despliegue AWS requiere autorización explícita y credenciales configuradas.

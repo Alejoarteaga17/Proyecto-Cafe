@@ -2,7 +2,9 @@
 
 ## Resumen
 
-`infrastructure` contiene los stacks AWS del proyecto de café: almacenamiento S3 medallion, IoT Core, Data Firehose y la plataforma Glue/Step Functions/Data Catalog/Athena.
+`infrastructure` contiene los stacks AWS batch del proyecto de café:
+almacenamiento S3 medallion y plataforma Glue/Step Functions/Data
+Catalog/Athena. La infraestructura IoT está en `streaming/infrastructure`.
 
 La arquitectura aprobada no incluye PostgreSQL/RDS, MongoDB, SQS, DLQ, SNS,
 Secrets Manager ni una base operativa separada. Esos componentes fueron
@@ -31,8 +33,11 @@ Cada stack vive dentro de `serverless/<stack>` y se despliega de forma independi
 Orden recomendado:
 
 1. `serverless/storage`
-2. `serverless/iot`
-3. `serverless/data-platform`
+2. `serverless/data-platform`
+
+La infraestructura IoT se despliega desde
+`streaming/infrastructure/serverless/iot` después de que exista el bucket de
+datos del stack `storage`.
 
 Los stacks excluidos de la arquitectura anterior fueron eliminados y no deben
 reintroducirse.

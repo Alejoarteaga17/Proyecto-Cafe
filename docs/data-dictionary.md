@@ -36,7 +36,9 @@
 | `soil_moisture` | double | porcentaje | 0-100 cuando se envía |
 | `nutrients_mg_kg` | object | mg/kg | contiene `N`, `P` y `K` numéricos |
 
-La validación estructural del evento se realiza en el productor/contrato de
-prueba y el procesamiento agronómico posterior no se inventa en Firehose.
+La validación estructural del evento se realiza en el simulador antes de
+publicar. IoT Core deriva `sensor_id` de `sensors/coffee/<sensor-id>/data`
+mediante la regla; Firehose solo entrega el evento y no realiza análisis
+agronómico.
 
-Los campos IoT (`sensor_id`, `location`, `timestamp`, `Temp_Max`, `Temp_Min`, `Humidity`, `Solar_Radiation`, `Precipitation_mm`, `soil_ph`, `soil_moisture`, `nutrients_mg_kg`) provienen del contrato existente en `batch/src/common/coffee_rules.py`; sus umbrales agronómicos siguen siendo provisionales hasta ser confirmados por el requisito del proyecto.
+Los campos IoT (`sensor_id`, `location`, `timestamp`, `Temp_Max`, `Temp_Min`, `Humidity`, `Solar_Radiation`, `Precipitation_mm`, `soil_ph`, `soil_moisture`, `nutrients_mg_kg`) provienen del contrato existente en `streaming/streaming_src/common/coffee_rules.py`; sus umbrales agronómicos siguen siendo provisionales hasta ser confirmados por el requisito del proyecto.

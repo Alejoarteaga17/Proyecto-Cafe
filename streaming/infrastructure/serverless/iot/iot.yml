@@ -1,4 +1,11 @@
 Resources:
+  SensorThing:
+    Type: AWS::IoT::Thing
+    Properties:
+      ThingName: ${self:custom.servicePrefix}-sensor-simulator
+      AttributePayload:
+        '{"device_type":"coffee-sensor","ingestion":"iot-core-firehose"}'
+
   SensorReadingsPolicy:
     Type: AWS::IoT::Policy
     Properties:

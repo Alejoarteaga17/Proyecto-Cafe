@@ -44,14 +44,17 @@ documentación no implica que exista un dashboard desplegado.
 
 ### Estructura del repositorio
 
-- **`batch/`**: flujo de ingestión histórica y validación de datos por lote.
-  - Incluye su `serverless`, `src`, `database`, `tests` e infraestructura propia dentro de `batch/infrastructure`.
+- **`batch/`**: ingestión histórica, Glue Job 1/2, Step Functions, catálogo y
+  pruebas del pipeline batch.
+- **`streaming/`**: simulador IoT, contrato de sensores, pruebas e
+  infraestructura IoT Core → Data Firehose → S3 Bronze.
 - **`batch/infrastructure/serverless/data-platform/`**: Glue, Step Functions, Glue Data Catalog y Athena.
 - **`frontend/`**: interfaz ligera para pruebas de carga CSV y validación del backend.
 - **`docs/`**: diagramas de arquitectura generados con `python3 architecture.py`.
 - **`docs/`**: arquitectura, contratos, diccionario, catálogo, lineage, RACI y estado de aceptación.
 
-La carpeta `streaming/` se menciona en documentación histórica, pero no existe en el repositorio actual. El inventario real y los estados verificados están en [`docs/architecture.md`](docs/architecture.md).
+La carpeta `streaming/` contiene únicamente la implementación aprobada del
+flujo IoT; no se recuperaron componentes legacy de diseños anteriores.
 
 La organización por flujo deja cada pipeline con su propio contexto funcional y su infraestructura asociada, sin depender de carpetas legacy del repositorio.
 
@@ -64,18 +67,18 @@ Cada subproyecto tiene su propio README con el orden de despliegue y variables d
 Desde el contenedor de desarrollo:
 
 ```bash
-cd /app/batch
-python -m pytest -q
+cd /app
+python -m pytest -q batch/tests streaming/tests
 ```
 
 El resultado local no verifica recursos AWS. Para validar plantillas, ejecutar
-`serverless print --stage dev` dentro de cada stack aprobado y revisar el plan
-antes de desplegar. No se debe ejecutar un despliegue sin autorización
-explícita.
+`serverless print --stage dev` dentro de cada stack aprobado, incluido
+`/app/streaming/infrastructure/serverless/iot`, y revisar el plan antes de
+desplegar. No se debe ejecutar un despliegue sin autorización explícita.
 
 El estado detallado y la evidencia se mantienen en
 [`docs/acceptance-checklist.md`](docs/acceptance-checklist.md). Los stacks
-Los componentes excluidos de la arquitectura anterior fueron eliminados y no
+de los componentes excluidos de la arquitectura anterior fueron eliminados y no
 deben reintroducirse.
 
 ---

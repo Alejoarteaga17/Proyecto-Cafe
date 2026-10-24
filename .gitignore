@@ -23,5 +23,4 @@ __pycache__/
 *.serverless
 .vscode/
 node_modules/
-batch/tests/sensor_readings/certs/
-streaming/tests/sensor_readings/certs/
+streaming/tests/certs/
