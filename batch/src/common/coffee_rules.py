@@ -128,6 +128,24 @@ def validate_coffee_reading(record):
         if field_name in record and _as_float(record.get(field_name)) is None:
             errors.append(f'Field "{field_name}" must be numeric')
 
+    temperature_max = _as_float(record.get('Temp_Max'))
+    temperature_min = _as_float(record.get('Temp_Min'))
+    if temperature_min is not None and temperature_max is not None:
+        if temperature_min > temperature_max:
+            errors.append('"Temp_Min" cannot exceed "Temp_Max"')
+    humidity = _as_float(record.get('Humidity'))
+    if humidity is not None and not 0 <= humidity <= 100:
+        errors.append('"Humidity" must be between 0 and 100')
+    soil_moisture = _as_float(record.get('soil_moisture'))
+    if soil_moisture is None:
+        soil_moisture = _as_float(record.get('soil_moisture_pct'))
+    if soil_moisture is not None and not 0 <= soil_moisture <= 100:
+        errors.append('"soil_moisture" must be between 0 and 100')
+    for field_name in ('Solar_Radiation', 'Precipitation_mm'):
+        value = _as_float(record.get(field_name))
+        if value is not None and value < 0:
+            errors.append(f'"{field_name}" cannot be negative')
+
     nutrients = record.get('nutrients_mg_kg')
     if not isinstance(nutrients, dict):
         errors.append('"nutrients_mg_kg" must be an object with N, P and K')

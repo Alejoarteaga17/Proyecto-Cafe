@@ -69,6 +69,19 @@ def validate_row(row, row_number=None):
         else:
             values[column] = number
 
+    try:
+        date_value = dt.date.fromisoformat(str(values['Date']))
+    except (TypeError, ValueError):
+        date_value = None
+        errors.append(f'{prefix}"Date" must be an ISO-8601 date')
+    if date_value is not None:
+        if date_value.year != values.get('YEAR'):
+            errors.append(f'{prefix}"Date" year does not match "YEAR"')
+        if date_value.month != values.get('MM'):
+            errors.append(f'{prefix}"Date" month does not match "MM"')
+        if date_value.day != values.get('DD'):
+            errors.append(f'{prefix}"Date" day does not match "DD"')
+
     if isinstance(values.get('YEAR'), int) and not 1900 <= values['YEAR'] <= 2100:
         errors.append(f'{prefix}"YEAR" is outside the supported range')
     if isinstance(values.get('MM'), int) and not 1 <= values['MM'] <= 12:

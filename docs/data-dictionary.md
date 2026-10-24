@@ -21,4 +21,22 @@
 - Silver: JSON validado, deduplicado y particionado por `YEAR` y `MM`; rechazos y duplicados conservados en prefijos separados.
 - Gold: Parquet agregado por `Location`, `YEAR` y `MM`, con métricas de temperatura, humedad, precipitación, radiación y precio.
 
+## IoT Bronze
+
+| Campo | Tipo | Unidad | Regla |
+| --- | --- | --- | --- |
+| `sensor_id` | string | identificador | lo añade IoT Core desde el topic autorizado |
+| `location` | string | lote | requerido |
+| `timestamp` | string ISO-8601 | UTC | requerido y parseable |
+| `Temp_Max`, `Temp_Min` | double | °C | numérico; mínimo no mayor que máximo |
+| `Humidity` | double | porcentaje | 0-100 |
+| `Solar_Radiation` | double | según sensor | no negativo |
+| `Precipitation_mm` | double | mm | no negativo |
+| `soil_ph` | double | pH | numérico |
+| `soil_moisture` | double | porcentaje | 0-100 cuando se envía |
+| `nutrients_mg_kg` | object | mg/kg | contiene `N`, `P` y `K` numéricos |
+
+La validación estructural del evento se realiza en el productor/contrato de
+prueba y el procesamiento agronómico posterior no se inventa en Firehose.
+
 Los campos IoT (`sensor_id`, `location`, `timestamp`, `Temp_Max`, `Temp_Min`, `Humidity`, `Solar_Radiation`, `Precipitation_mm`, `soil_ph`, `soil_moisture`, `nutrients_mg_kg`) provienen del contrato existente en `batch/src/common/coffee_rules.py`; sus umbrales agronómicos siguen siendo provisionales hasta ser confirmados por el requisito del proyecto.

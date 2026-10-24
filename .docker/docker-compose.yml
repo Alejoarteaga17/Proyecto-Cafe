@@ -5,6 +5,9 @@ services:
       context: .
       dockerfile: Dockerfile
       target: img-root
+    env_file:
+      - ../.envs/aws.env
+      - ../.envs/sls.env
     volumes:
       - ..:/app
       - coffee-cultivation-bashhistory:/commandhistory

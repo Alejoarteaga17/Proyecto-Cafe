@@ -32,7 +32,6 @@
           "Medellín",
           "monorepository",
           "openpyxl",
-          "pymongo"
         ],
         "git.autoRepositoryDetection": true,
         "json.format.enable": true,

@@ -2,7 +2,9 @@
 
 ## Resumen
 
-`batch` contiene la ingestión histórica y los jobs del data lake del proyecto de café. La ruta aprobada es API Gateway -> Lambda -> S3 Bronze -> Glue -> Silver/Gold.
+`batch` contiene el pipeline histórico completo del data lake. La ruta
+aprobada es API Gateway -> Lambda -> S3 Bronze -> Glue Job 1 -> Silver ->
+Glue Job 2 -> Gold.
 
 El pipeline está desplegado como varios stacks independientes bajo `serverless/` y usa su infraestructura propia dentro de `batch/infrastructure`.
 
@@ -21,10 +23,6 @@ Crea los archivos en `.envs` con los valores requeridos por AWS, Serverless y el
 
 El usuario de Serverless debe tener permisos IAM adecuados en la cuenta de AWS y sus credenciales deben configurarse desde `.envs/aws.env`.
 
-### Código legacy
-
-`database/`, `src/validate_and_persist`, `src/persist_sensor_reading` y los stacks SQS/MongoDB son `LEGACY`. No son necesarios para el flujo aprobado y no deben desplegarse como parte de una nueva instalación.
-
 ### Despliegue
 
 Se usa Serverless Framework y cada stack vive dentro de `serverless/` y `infrastructure/serverless/` del mismo flujo.
@@ -32,18 +30,45 @@ Se usa Serverless Framework y cada stack vive dentro de `serverless/` y `infrast
 Orden recomendado:
 
 1. `infrastructure/serverless/storage`
-2. `infrastructure/serverless/iot`
-3. Publica los scripts Glue con `glue/publish-scripts.ps1 -BucketName <bucket>`.
+2. Publica los scripts Glue con `glue/publish-scripts.ps1 -BucketName <bucket>`.
+3. `infrastructure/serverless/iot`
 4. `infrastructure/serverless/data-platform`
 5. `serverless`
 
 Valida primero con `serverless print --stage dev` y despliega solo con autorización explícita.
+
+Los componentes excluidos de la arquitectura anterior fueron eliminados y no
+deben reintroducirse.
 
 ### Eliminación
 
 Usa `serverless remove` en el orden inverso al despliegue para evitar dependencias de infraestructura.
 
 ---
+
+## Contrato operativo
+
+- La API recibe JSON con `file`, cuyo valor es el CSV codificado en Base64.
+- El archivo debe ser UTF-8, contener exactamente las 19 columnas requeridas y
+  no superar 5 MiB ni 300 filas.
+- Lambda valida estructura, tipos, fechas, rangos y consistencia antes de
+  escribir en `bronze/historical/`.
+- Glue Job 1 conserva filas rechazadas y duplicadas en `silver/rejected/` y
+  `silver/duplicates/`, y escribe filas válidas particionadas por `YEAR/MM`.
+- Glue Job 2 lee Silver JSON y escribe Gold Parquet particionado por `YEAR/MM`.
+- Step Functions ejecuta Job 2 únicamente después del éxito de Job 1.
+
+## Validación local del batch
+
+```bash
+cd batch
+python3 -m pytest -q
+python3 -m compileall -q src glue tests
+```
+
+La validación local no confirma recursos desplegados en AWS. La validación de
+infraestructura requiere `serverless print --stage dev` y `cfn-lint` dentro del
+contenedor.
 
 ## Glosario
 

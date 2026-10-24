@@ -4,7 +4,7 @@ from src.pipeline.transformations import bronze_to_silver, silver_to_gold
 def _row(location='Armenia', day=23, temp=25):
     return {
         'LON': '-75.68', 'LAT': '4.53', 'YEAR': '2026', 'MM': '8',
-        'DD': str(day), 'DOY': '234', 'Date': '2026-08-23',
+        'DD': str(day), 'DOY': '234', 'Date': f'2026-08-{day:02d}',
         'Temp_Max': str(temp), 'Temp_Min': '17', 'Humidity': '70',
         'Solar_Radiation': '500', 'Precipitation_mm': '2',
         'Location': location, 'Close_USD_60kg': '160',

@@ -9,12 +9,23 @@
 - Glue Job 1, Glue Job 2 and Step Functions definitions.
 - IoT Core to Data Firehose to S3 Bronze infrastructure path.
 - Data dictionary, catalog, lineage, RACI and architecture status documents.
+- Reproducible PowerShell publisher for Glue scripts and shared pipeline code.
+- IoT Bronze catalog contract and simulator payloads containing `sensor_id`.
+- Batch upload contract now rejects duplicate and unexpected CSV columns.
 
 ### Changed
 
 - Historical upload Lambda now validates the upload boundary and writes raw files to S3 Bronze.
-- Existing MongoDB, SQS, DLQ and SNS resources are documented as legacy rather than treated as target architecture.
+- Historical uploads now reject invalid values, inconsistent ISO dates and empty rows
+  instead of silently imputing them.
+- Glue Job 1 is scoped to `bronze/historical/` so IoT JSON is not parsed as CSV.
+- Removed the MongoDB, SQS, DLQ, Secrets Manager and SNS components, including
+  their source code, infrastructure, fixtures and development dependencies.
+- Batch pipeline marked complete for local/IaC scope; AWS execution remains
+  explicitly unverified.
 
 ### Pending
 
-- AWS deployment verification, QuickSight consumption, raw/Silver catalog tables and DataOps automation remain deferred or not verified.
+- AWS deployment verification and QuickSight consumption remain not verified or
+  deferred to the final sprint. DataOps automation remains deferred to the final
+  sprint.

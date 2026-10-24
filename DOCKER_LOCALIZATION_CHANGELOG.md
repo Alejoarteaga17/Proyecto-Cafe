@@ -35,9 +35,9 @@ Este cambio se propagó a:
 - `infrastructure/.docker/docker-compose.yml`
 
 Y afecta automáticamente a:
-- Nombres de recursos AWS (S3, SQS, Lambda, etc.)
+- Nombres de recursos AWS (S3, Lambda, etc.)
 - Rutas SSM de configuración
-- Nombres de secretos en Secrets Manager
+- Configuración parametrizada del despliegue
 
 ### 4. Rutas de Python Layers
 
@@ -102,7 +102,7 @@ Creados con documentación completa:
 - `config.env.example` - DEVELOPER, STAGE
 
 **Infrastructure (.envs/)**
-- `config.env.example` - DEVELOPER, STAGE, MongoDB, alertas
+- `config.env.example` - DEVELOPER, STAGE
 
 Los `.gitignore` fueron actualizados para permitir que los archivos `.example` se trackeen en git.
 

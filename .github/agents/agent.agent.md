@@ -166,7 +166,13 @@ Do not reintroduce components from previous designs, including:
 
 Do not propose these services as automatic improvements or replacements for existing components.
 
-If the repository still contains code or configuration associated with an older design, identify it as a discrepancy. Do not automatically delete it or assume that it remains part of the target architecture.
+If the repository still contains code or configuration associated with an older
+design, identify it as a discrepancy and remove it from the repository during
+the implementation unless the user explicitly requests its preservation.
+Delete the associated source code, tests, fixtures, infrastructure stacks,
+deployment scripts, dependencies, and documentation references. Do not leave
+MongoDB, SQS, DLQ, Secrets Manager, SNS, or other excluded components as
+`LEGACY` artifacts in the active repository.
 
 Any change to the approved architecture must be presented as a separate proposal and must receive explicit approval before implementation.
 
@@ -230,7 +236,10 @@ Make resource dependencies, deployment parameters, and outputs explicit.
 
 Before deployment, validate templates, inspect the planned changes, and identify potential resource replacement, data loss, permission changes, and costs.
 
-Do not execute destructive operations or production deployments without explicit authorization.
+Do not execute production deployments without explicit authorization. Removing
+repository files that belong exclusively to the prohibited legacy architecture
+is required when implementing the approved architecture; do not delete shared
+or approved resources without first verifying their ownership.
 
 ## 5. Docker and development environment
 

@@ -47,6 +47,7 @@ Resources:
                   - glue:StartJobRun
                   - glue:GetJobRun
                   - glue:GetJobRuns
+                  - glue:BatchStopJobRun
                 Resource:
                   - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:job/${self:service}-bronze-to-silver-${sls:stage}
                   - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:job/${self:service}-silver-to-gold-${sls:stage}
@@ -74,7 +75,7 @@ Resources:
       DefaultArguments:
         '--job-language': python
         '--extra-py-files': s3://${self:custom.glueScriptBucket}/glue/coffee-pipeline.zip
-        '--input_path': s3://${self:custom.bucketName}/bronze/
+        '--input_path': s3://${self:custom.bucketName}/bronze/historical/
         '--output_path': s3://${self:custom.bucketName}/silver/historical/
         '--rejected_path': s3://${self:custom.bucketName}/silver/rejected/
         '--duplicate_path': s3://${self:custom.bucketName}/silver/duplicates/
@@ -245,6 +246,36 @@ Resources:
             - {Name: brl, Type: string}
             - {Name: cny, Type: string}
             - {Name: mxn, Type: string}
+
+  IotBronzeTable:
+    Type: AWS::Glue::Table
+    Properties:
+      CatalogId: !Ref AWS::AccountId
+      DatabaseName: !Ref GlueDatabase
+      TableInput:
+        Name: coffee_iot_bronze
+        TableType: EXTERNAL_TABLE
+        Parameters:
+          classification: json
+          compressionType: gzip
+        StorageDescriptor:
+          Location: s3://${self:custom.bucketName}/bronze/iot/
+          InputFormat: org.apache.hadoop.mapred.TextInputFormat
+          OutputFormat: org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat
+          SerdeInfo:
+            SerializationLibrary: org.openx.data.jsonserde.JsonSerDe
+          Columns:
+            - {Name: sensor_id, Type: string}
+            - {Name: location, Type: string}
+            - {Name: timestamp, Type: string}
+            - {Name: Temp_Max, Type: double}
+            - {Name: Temp_Min, Type: double}
+            - {Name: Humidity, Type: double}
+            - {Name: Solar_Radiation, Type: double}
+            - {Name: Precipitation_mm, Type: double}
+            - {Name: soil_ph, Type: double}
+            - {Name: soil_moisture, Type: double}
+            - {Name: nutrients_mg_kg, Type: struct<n:double,p:double,k:double>}
 
 Outputs:
   StateMachineArn:

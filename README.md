@@ -1,6 +1,6 @@
 # README
 
-> **Estado arquitectónico:** la arquitectura aprobada es Historical CSV -> API Gateway -> Lambda -> S3 Bronze; sensores simulados -> IoT Core -> Data Firehose -> S3 Bronze; Bronze -> Glue Job 1 -> Silver -> Glue Job 2 -> Gold -> Athena/QuickSight. Los recursos MongoDB, SQS, DLQ y SNS que aún aparecen en el repositorio son `LEGACY` y no forman parte del flujo nuevo.
+> **Estado arquitectónico:** la arquitectura aprobada es Historical CSV -> API Gateway -> Lambda -> S3 Bronze; sensores simulados -> IoT Core -> Data Firehose -> S3 Bronze; Bronze -> Glue Job 1 -> Silver -> Glue Job 2 -> Gold -> Athena/QuickSight. Los componentes MongoDB, SQS, DLQ, Secrets Manager y SNS fueron eliminados del repositorio por pertenecer a la arquitectura anterior.
 
 - [README](#readme)
   - [Resumen](#resumen)
@@ -35,9 +35,12 @@ Los sensores simulados publican eventos vía MQTT a AWS IoT Core. Una regla los 
 
 
 
-### Observabilidad
+### Orquestación, consulta y alcance
 
-Step Functions coordina Glue Job 1 y Glue Job 2 con reintentos y transición de fallo. Athena consulta la tabla Gold del Glue Data Catalog. QuickSight y la automatización DataOps se mantienen como trabajo del sprint final.
+Step Functions coordina Glue Job 1 y Glue Job 2 con reintentos y transición de
+fallo. Athena consulta las tablas del Glue Data Catalog. QuickSight y la
+automatización DataOps se mantienen como trabajo del sprint final; la
+documentación no implica que exista un dashboard desplegado.
 
 ### Estructura del repositorio
 
@@ -55,6 +58,25 @@ La organización por flujo deja cada pipeline con su propio contexto funcional y
 Con esta estructura ya no quedan carpetas duplicadas ni versiones paralelas del mismo proyecto.
 
 Cada subproyecto tiene su propio README con el orden de despliegue y variables de entorno.
+
+### Validación local
+
+Desde el contenedor de desarrollo:
+
+```bash
+cd /app/batch
+python -m pytest -q
+```
+
+El resultado local no verifica recursos AWS. Para validar plantillas, ejecutar
+`serverless print --stage dev` dentro de cada stack aprobado y revisar el plan
+antes de desplegar. No se debe ejecutar un despliegue sin autorización
+explícita.
+
+El estado detallado y la evidencia se mantienen en
+[`docs/acceptance-checklist.md`](docs/acceptance-checklist.md). Los stacks
+Los componentes excluidos de la arquitectura anterior fueron eliminados y no
+deben reintroducirse.
 
 ---
 

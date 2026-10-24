@@ -57,3 +57,60 @@ def test_upload_rejects_oversized_file(monkeypatch):
 
     assert response['statusCode'] == 413
     assert not s3.calls
+
+
+def test_upload_rejects_invalid_row_values(monkeypatch):
+    s3 = S3Stub()
+    monkeypatch.setattr(upload_module, 's3_client', s3)
+    invalid_csv = CSV.replace('25,17,70', 'not-a-number,17,70')
+
+    response = upload_module.handler(_event(invalid_csv), None)
+
+    assert response['statusCode'] == 400
+    assert 'Temp_Max' in json.loads(response['body'])['errors'][0]
+    assert not s3.calls
+
+
+def test_upload_rejects_invalid_date_consistency(monkeypatch):
+    s3 = S3Stub()
+    monkeypatch.setattr(upload_module, 's3_client', s3)
+    invalid_csv = CSV.replace('2026-08-23,25', '2026-08-24,25')
+
+    response = upload_module.handler(_event(invalid_csv), None)
+
+    assert response['statusCode'] == 400
+    assert 'Date' in json.loads(response['body'])['errors'][0]
+    assert not s3.calls
+
+
+def test_upload_rejects_duplicate_headers(monkeypatch):
+    s3 = S3Stub()
+    monkeypatch.setattr(upload_module, 's3_client', s3)
+    invalid_csv = CSV.replace(
+        'LON,LAT,YEAR',
+        'LON,LON,YEAR',
+    )
+
+    response = upload_module.handler(_event(invalid_csv), None)
+
+    assert response['statusCode'] == 400
+    assert 'duplicate' in json.loads(response['body'])['errors'][0]
+    assert not s3.calls
+
+
+def test_upload_rejects_unexpected_columns(monkeypatch):
+    s3 = S3Stub()
+    monkeypatch.setattr(upload_module, 's3_client', s3)
+    invalid_csv = CSV.replace(
+        'mxn\n',
+        'mxn,unexpected\n',
+    ).replace(
+        ',18\n',
+        ',18,unexpected-value\n',
+    )
+
+    response = upload_module.handler(_event(invalid_csv), None)
+
+    assert response['statusCode'] == 400
+    assert 'unexpected column' in json.loads(response['body'])['errors'][0]
+    assert not s3.calls

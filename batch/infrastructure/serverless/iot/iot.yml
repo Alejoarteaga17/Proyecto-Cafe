@@ -63,12 +63,9 @@ Resources:
         # topic(3) is the sensor-id segment of sensors/coffee/<sensor-id>/data,
         # which the SensorReadingsPolicy guarantees matches the connecting
         # certificate's ThingName (iot:Publish is scoped to that topic). Added
-        # as its own field (not "sensor_id" -- AWS IoT SQL doesn't document
-        # how a naming collision with SELECT * would resolve) so the Lambda
-        # can use it as the reading's sensor_id -- the payload itself carries
-        # no such field, precisely so there's nothing client-controlled to
-        # misreport.
-        Sql: "SELECT *, topic(3) AS thing_name FROM 'sensors/coffee/+/data'"
+        # as the reading's sensor_id. The payload itself carries no such field,
+        # so there is nothing client-controlled to misreport.
+        Sql: "SELECT *, topic(3) AS sensor_id FROM 'sensors/coffee/+/data'"
         AwsIotSqlVersion: '2016-03-23'
         RuleDisabled: false
         Actions:

@@ -6,6 +6,8 @@ import json
 import os
 import uuid
 
+from src.common.coffee_batch_validator import BatchValidationError, validate_rows
+
 try:
     import boto3
 except ModuleNotFoundError:  # Local tests can inject an S3 client stub.
@@ -32,20 +34,6 @@ REQUIRED_COLUMNS = [
     'cny',
     'mxn',
 ]
-
-DEFAULT_IMPUTATIONS = {
-    'Temp_Max': 22.0,
-    'Temp_Min': 18.0,
-    'Humidity': 70.0,
-    'Solar_Radiation': 450.0,
-    'Precipitation_mm': 0.0,
-    'Close_USD_60kg': 0.0,
-    'brl': 1.0,
-    'cny': 1.0,
-    'mxn': 1.0,
-}
-
-
 
 class _UnavailableS3Client:
     def put_object(self, **kwargs):
@@ -114,26 +102,32 @@ def _parse_csv_rows(csv_text):
         raise ValueError('CSV file is missing a header row')
 
     fieldnames = [str(name).strip() for name in reader.fieldnames]
+    if len(fieldnames) != len(set(fieldnames)):
+        raise ValueError('CSV header contains duplicate columns')
+    reader.fieldnames = fieldnames
     missing = [column for column in REQUIRED_COLUMNS if column not in fieldnames]
     if missing:
         raise ValueError(f'Missing required column(s): {", ".join(missing)}')
+    unexpected = [
+        column for column in fieldnames if column not in REQUIRED_COLUMNS
+    ]
+    if unexpected:
+        raise ValueError(
+            f'CSV contains unexpected column(s): {", ".join(unexpected)}'
+        )
 
     cleaned_rows = []
     for row_number, row in enumerate(reader, start=2):
-        cleaned_row = {}
-        for column in REQUIRED_COLUMNS:
-            value = row.get(column)
-            if value is None or (isinstance(value, str) and not value.strip()):
-                cleaned_row[column] = DEFAULT_IMPUTATIONS.get(column, 0)
-            else:
-                cleaned_row[column] = value.strip()
-        if cleaned_row['Location'] == 'nan':
-            cleaned_row['Location'] = 'Unknown_Location'
-        cleaned_rows.append(cleaned_row)
-
-    if not cleaned_rows:
-        raise ValueError('CSV file has no data rows')
-    return cleaned_rows
+        if None in row and any(value not in (None, '') for value in row[None]):
+            raise ValueError(f'Row {row_number} contains unexpected columns')
+        cleaned_rows.append({
+            column: (row.get(column) or '').strip()
+            for column in REQUIRED_COLUMNS
+        })
+    try:
+        return validate_rows(cleaned_rows)
+    except BatchValidationError as error:
+        raise ValueError(str(error)) from error
 
 
 def _response(status_code, body):

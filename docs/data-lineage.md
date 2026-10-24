@@ -14,9 +14,11 @@
 
 | Dataset | Capa | Ubicación | Formato | Catálogo |
 | --- | --- | --- | --- | --- |
-| historical_raw | Bronze | `s3://<data-lake>/bronze/historical/` | CSV | pendiente de tabla raw |
-| iot_raw | Bronze | `s3://<data-lake>/bronze/iot/` | JSON.GZIP | pendiente de tabla raw |
-| historical_silver | Silver | `s3://<data-lake>/silver/historical/` | JSON | pendiente de tabla silver |
+| historical_raw | Bronze | `s3://<data-lake>/bronze/historical/` | CSV | `coffee_historical_bronze` |
+| iot_raw | Bronze | `s3://<data-lake>/bronze/iot/` | JSON.GZIP | `coffee_iot_bronze` |
+| historical_silver | Silver | `s3://<data-lake>/silver/historical/` | JSON | `coffee_historical_silver` |
 | historical_gold | Gold | `s3://<data-lake>/gold/historical/` | Parquet | `coffee_historical_gold` |
 
-El catálogo y la tabla Gold están declarados en `batch/infrastructure/serverless/data-platform/resources.yml`; la existencia y consulta en AWS aún no está verificada.
+Las tablas Bronze, Silver y Gold están declaradas en
+`batch/infrastructure/serverless/data-platform/resources.yml`; la existencia y
+consulta en AWS aún no está verificada.

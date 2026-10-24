@@ -4,9 +4,10 @@
 
 `infrastructure` contiene los stacks AWS del proyecto de café: almacenamiento S3 medallion, IoT Core, Data Firehose y la plataforma Glue/Step Functions/Data Catalog/Athena.
 
-Los stacks `queue`, `secrets` y `alerts`, además de cualquier referencia MongoDB, son `LEGACY`. No forman parte de la arquitectura aprobada ni deben incluirse en un despliegue nuevo.
-
-La arquitectura aprobada no incluye PostgreSQL/RDS, MongoDB, SQS, DLQ, SNS ni una base operativa separada. S3 es el almacenamiento del data lake y Glue procesa las capas medallion.
+La arquitectura aprobada no incluye PostgreSQL/RDS, MongoDB, SQS, DLQ, SNS,
+Secrets Manager ni una base operativa separada. Esos componentes fueron
+eliminados. S3 es el almacenamiento del data lake y Glue procesa las capas
+medallion.
 
 ## Configuración
 
@@ -30,10 +31,11 @@ Cada stack vive dentro de `serverless/<stack>` y se despliega de forma independi
 Orden recomendado:
 
 1. `serverless/storage`
-2. `serverless/queue`
-3. `serverless/secrets`
-4. `serverless/iot`
-5. `serverless/alerts`
+2. `serverless/iot`
+3. `serverless/data-platform`
+
+Los stacks excluidos de la arquitectura anterior fueron eliminados y no deben
+reintroducirse.
 
 ### Eliminación
 
@@ -57,8 +59,6 @@ Usa `serverless remove` en orden inverso al despliegue.
 ### Service environment variables: `.envs/config.env`
 
 - `DEVELOPER`: identificador del desarrollador para nombres únicos de recursos.
-- `MONGO_HOST`, `MONGO_USERNAME`, `MONGO_PASSWORD`, `MONGO_DBNAME`: credenciales de MongoDB Atlas para el secret compartido.
-- `ALERTS_EMAIL`: correo del equipo para las alertas de SNS.
 
 ### Variables de despliegue Serverless
 
