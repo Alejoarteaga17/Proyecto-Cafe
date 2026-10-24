@@ -4,7 +4,9 @@ Resources:
     Properties:
       ThingName: ${self:custom.servicePrefix}-sensor-simulator
       AttributePayload:
-        '{"device_type":"coffee-sensor","ingestion":"iot-core-firehose"}'
+        Attributes:
+          device_type: coffee-sensor
+          ingestion: iot-core-firehose
 
   SensorReadingsPolicy:
     Type: AWS::IoT::Policy
@@ -79,7 +81,7 @@ Resources:
           - Firehose:
               DeliveryStreamName: !Ref SensorFirehose
               RoleArn: !GetAtt SensorReadingsTopicRuleRole.Arn
-              Separator: '\n'
+              Separator: "\n"
 
   SensorFirehose:
     Type: AWS::KinesisFirehose::DeliveryStream

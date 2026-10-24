@@ -19,19 +19,24 @@
 
 ### Changed
 
+- Corregida la lectura de particiones `YEAR/MM` en Glue Job 2 y agregada la
+  autorización `s3:DeleteObject` requerida para reintentos controlados de Job 1.
+- Job 2 ahora registra las particiones Gold en Glue Data Catalog para que Athena
+  pueda consultar automáticamente los resultados de cada ejecución.
+- Verificado end-to-end en AWS el flujo Step Functions → Glue Job 1 → Glue Job 2,
+  con resultados en Silver y Gold.
 - Historical upload Lambda now validates the upload boundary and writes raw files to S3 Bronze.
 - Historical uploads now reject invalid values, inconsistent ISO dates and empty rows
   instead of silently imputing them.
 - Glue Job 1 is scoped to `bronze/historical/` so IoT JSON is not parsed as CSV.
 - Removed the MongoDB, SQS, DLQ, Secrets Manager and SNS components, including
   their source code, infrastructure, fixtures and development dependencies.
-- Batch pipeline marked complete for local/IaC scope; AWS execution remains
-  explicitly unverified.
-- Streaming remains AWS-unverified; certificate provisioning and an authorized
-  MQTT integration test are required before claiming end-to-end delivery.
+- Batch pipeline verified locally and end-to-end in AWS, including Step
+  Functions, Glue, Data Catalog and an Athena query.
+- Streaming ingestion verified in AWS with an authorized MQTT event delivered
+  by IoT Core and Firehose to S3 Bronze.
 
 ### Pending
 
-- AWS deployment verification and QuickSight consumption remain not verified or
-  deferred to the final sprint. DataOps automation remains deferred to the final
-  sprint.
+- QuickSight consumption remains deferred to the final sprint. DataOps
+  automation remains deferred to the final sprint.

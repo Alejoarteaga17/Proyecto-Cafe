@@ -22,6 +22,8 @@ Resources:
                   - s3:GetObject
                   - s3:PutObject
                   - s3:ListBucket
+                  - s3:DeleteObject
+                  - glue:BatchCreatePartition
                 Resource:
                   - arn:aws:s3:::${self:custom.bucketName}
                   - arn:aws:s3:::${self:custom.bucketName}/*
@@ -97,6 +99,8 @@ Resources:
         '--extra-py-files': s3://${self:custom.glueScriptBucket}/glue/coffee-pipeline.zip
         '--input_path': s3://${self:custom.bucketName}/silver/historical/
         '--output_path': s3://${self:custom.bucketName}/gold/historical/
+        '--catalog_database': !Ref GlueDatabase
+        '--catalog_table': coffee_historical_gold
 
   GoldWorkGroup:
     Type: AWS::Athena::WorkGroup
@@ -150,6 +154,9 @@ Resources:
         TableType: EXTERNAL_TABLE
         Parameters:
           classification: parquet
+        PartitionKeys:
+          - {Name: YEAR, Type: int}
+          - {Name: MM, Type: int}
         StorageDescriptor:
           Location: s3://${self:custom.bucketName}/gold/historical/
           InputFormat: org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat
@@ -165,10 +172,6 @@ Resources:
             - {Name: total_precipitation_mm, Type: double}
             - {Name: avg_solar_radiation, Type: double}
             - {Name: avg_close_usd_60kg, Type: double}
-          PartitionKeys:
-            - {Name: YEAR, Type: int}
-            - {Name: MM, Type: int}
-
   HistoricalSilverTable:
     Type: AWS::Glue::Table
     Properties:
@@ -179,6 +182,9 @@ Resources:
         TableType: EXTERNAL_TABLE
         Parameters:
           classification: json
+        PartitionKeys:
+          - {Name: YEAR, Type: int}
+          - {Name: MM, Type: int}
         StorageDescriptor:
           Location: s3://${self:custom.bucketName}/silver/historical/
           InputFormat: org.apache.hadoop.mapred.TextInputFormat
@@ -203,10 +209,6 @@ Resources:
             - {Name: brl, Type: double}
             - {Name: cny, Type: double}
             - {Name: mxn, Type: double}
-          PartitionKeys:
-            - {Name: YEAR, Type: int}
-            - {Name: MM, Type: int}
-
   HistoricalBronzeTable:
     Type: AWS::Glue::Table
     Properties:

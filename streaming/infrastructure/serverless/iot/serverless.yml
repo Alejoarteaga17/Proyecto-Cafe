@@ -7,35 +7,12 @@ provider:
   stage: dev
   region: us-east-1
   stackName: ${env:DEPLOY_APP, 'coffee-cultivation'}-${self:service}
-  deploymentBucket:
-    name: ${self:custom.s3.deploymentBucketName.${self:custom.stage}}
-
-plugins:
-  - serverless-deployment-bucket
-  - '@serverless/safeguards-plugin'
-
 resources:
   - ${file(iot.yml)}
   - ${file(parameters.yml)}
 
 custom:
   stage: ${opt:stage, self:provider.stage}
-  safeguards:
-    - safeguard: framework-version
-      enforcementLevel: warning
-      config: ${self:frameworkVersion}
-    - safeguard: allowed-regions
-      enforcementLevel: error
-      config:
-        - ${self:provider.region}
-    - safeguard: no-wild-iam-role-statements
-      enforcementLevel: warning
-    - safeguard: allowed-stages
-      enforcementLevel: error
-      config:
-        - dev
-        - test
-        - prod
   servicePrefix: ${env:DEPLOY_APP, 'coffee-cultivation'}-${self:service}
   developer: ${env:DEVELOPER, 'aaccode'}
   s3:

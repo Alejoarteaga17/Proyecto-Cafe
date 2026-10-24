@@ -6,8 +6,8 @@ ValidateAndStore:
   memorySize: 256
   package:
     patterns:
-      - ../../src/common/**
-      - ../../src/validate_and_store/**
+    - ../src/common/**
+    - ../src/validate_and_store/**
   environment:
     BRONZE_BUCKET_NAME: ${self:custom.s3.dataLakeBucket.name}
   events:

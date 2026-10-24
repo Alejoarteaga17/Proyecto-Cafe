@@ -20,5 +20,7 @@
 | historical_gold | Gold | `s3://<data-lake>/gold/historical/` | Parquet | `coffee_historical_gold` |
 
 Las tablas Bronze, Silver y Gold están declaradas en
-`batch/infrastructure/serverless/data-platform/resources.yml`; la existencia y
-consulta en AWS aún no está verificada.
+`batch/infrastructure/serverless/data-platform/resources.yml`. La tabla Gold
+fue verificada en AWS mediante Athena después de que Job 2 registrara la
+partición `YEAR=2026/MM=8`; una consulta de conteo devolvió `1` registro.
+QuickSight permanece reservado para el sprint final.

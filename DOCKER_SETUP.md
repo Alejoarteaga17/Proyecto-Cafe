@@ -12,14 +12,6 @@ Serverless Framework.
 
 ## Inicio
 
-Desde la raíz del repositorio:
-
-```bash
-docker compose -f .docker/docker-compose.yml build
-docker compose -f .docker/docker-compose.yml up -d
-docker exec -it CoffeeCultivation bash
-```
-
 Antes de iniciar el contenedor, crea el archivo local de credenciales a partir
 del ejemplo:
 
@@ -31,6 +23,17 @@ cp .envs/sls.env.example .envs/sls.env
 Edita `.envs/aws.env` y reemplaza los valores de ejemplo por tus credenciales
 AWS. Este archivo está excluido de Git y Docker Compose lo inyecta como
 variables de entorno; no lo compartas ni lo confirmes en el repositorio.
+
+Edita `.envs/sls.env` y reemplaza su valor de ejemplo si usarás funciones del
+Serverless Dashboard. Para validar o desplegar con AWS, `aws.env` es el archivo
+importante.
+
+Desde la raíz del repositorio, levanta Docker:
+
+```bash
+docker compose -f .docker/docker-compose.yml up -d --build --force-recreate
+docker exec -it CoffeeCultivation bash
+```
 
 Si el contenedor ya estaba creado, recréalo para cargar cambios:
 

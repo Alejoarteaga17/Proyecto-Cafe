@@ -35,7 +35,7 @@ RUN case "$(dpkg --print-architecture)" in \
     && ./aws/install \
     && apt-get install -y less
 
-# Install Serverless framework + plugins
+# Install Serverless Framework.
 RUN npm install -g serverless
 
 # Set up non root user
@@ -75,5 +75,4 @@ USER $USER
 FROM img-base AS img-root
 USER root
 RUN apt-get install -y graphviz
-RUN pip3 install diagrams
 USER $USER

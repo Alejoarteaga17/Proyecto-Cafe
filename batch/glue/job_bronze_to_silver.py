@@ -24,7 +24,10 @@ def main():
         format='csv',
         format_options={'withHeader': True},
     )
-    rows = [row.asDict(recursive=True) for row in dynamic_frame.collect()]
+    rows = [
+        row.asDict(recursive=True)
+        for row in dynamic_frame.toDF().collect()
+    ]
     result = bronze_to_silver(rows)
 
     _write_json(glue_context, result.valid_rows, args['output_path'], True)
@@ -45,6 +48,8 @@ def _write_json(glue_context, rows, path, partitioned=False):
 def _arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument('--JOB_NAME', required=True)
+    parser.add_argument('--JOB_ID')
+    parser.add_argument('--JOB_RUN_ID')
     parser.add_argument('--input_path', required=True)
     parser.add_argument('--output_path', required=True)
     parser.add_argument('--rejected_path', required=True)
