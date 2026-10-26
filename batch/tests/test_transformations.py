@@ -1,3 +1,6 @@
+import pytest
+
+from src.common.coffee_batch_validator import BatchValidationError, validate_row, validate_rows
 from src.pipeline.transformations import bronze_to_silver, silver_to_gold
 
 
@@ -31,3 +34,58 @@ def test_silver_to_gold_groups_by_location_year_and_month():
         'avg_humidity': 70.0, 'total_precipitation_mm': 4.0,
         'avg_solar_radiation': 500.0, 'avg_close_usd_60kg': 160.0,
     }]
+
+
+@pytest.mark.parametrize(
+    'changes, expected_error',
+    [
+        ({'YEAR': '1800'}, '"YEAR" is outside'),
+        ({'MM': '13'}, '"MM" must be between'),
+        ({'DD': '0'}, '"DD" must be between'),
+        ({'DOY': '367'}, '"DOY" must be between'),
+        ({'Temp_Min': '30'}, '"Temp_Min" cannot exceed'),
+        ({'Solar_Radiation': '-1'}, '"Solar_Radiation" cannot be negative'),
+        ({'Precipitation_mm': '-1'}, '"Precipitation_mm" cannot be negative'),
+        ({'Location': ''}, '"Location" cannot be empty'),
+        ({'Close_USD_60kg': '-1'}, '"Close_USD_60kg" cannot be negative'),
+    ],
+)
+def test_validate_row_rejects_invalid_ranges(changes, expected_error):
+    row = _row()
+    row.update(changes)
+
+    with pytest.raises(BatchValidationError, match=expected_error):
+        validate_row(row, 2)
+
+
+def test_validate_row_rejects_missing_column_and_bad_date():
+    row = _row()
+    del row['LON']
+    row['Date'] = 'not-a-date'
+
+    with pytest.raises(BatchValidationError) as error:
+        validate_row(row, 2)
+
+    assert any('missing "LON"' in message for message in error.value.errors)
+    assert '"Date" must be an ISO-8601 date' not in error.value.errors
+
+
+def test_validate_row_rejects_non_integer_values_and_date_mismatch():
+    row = _row()
+    row.update({'YEAR': '2026.5', 'Date': '2026-09-23'})
+
+    with pytest.raises(BatchValidationError) as error:
+        validate_row(row, 2)
+
+    assert any('"YEAR" must be an integer' in message
+               for message in error.value.errors)
+    assert any('"Date" month does not match "MM"' in message
+               for message in error.value.errors)
+
+
+def test_validate_rows_rejects_empty_and_too_many_rows():
+    with pytest.raises(BatchValidationError, match='no data rows'):
+        validate_rows([])
+
+    with pytest.raises(BatchValidationError, match='maximum is 300'):
+        validate_rows([_row()] * 301)

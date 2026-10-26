@@ -52,11 +52,20 @@ documentación no implica que exista un dashboard desplegado.
 - **`frontend/`**: interfaz ligera para pruebas de carga CSV y validación del backend.
 - **`docs/`**: diagramas de arquitectura generados con `python3 architecture.py`.
 - **`docs/`**: arquitectura, contratos, diccionario, catálogo, lineage, RACI y estado de aceptación.
+- **`batch/benchmarks/`**: consultas de Athena para comparar bytes escaneados y tiempo antes/después de las optimizaciones.
 
 La carpeta `streaming/` contiene únicamente la implementación aprobada del
 flujo IoT; no se recuperaron componentes legacy de diseños anteriores.
 
 La organización por flujo deja cada pipeline con su propio contexto funcional y su infraestructura asociada, sin depender de carpetas legacy del repositorio.
+
+El detalle de las optimizaciones S3/Athena, las consultas comparables y el
+procedimiento para obtener `DataScannedInBytes` y
+`TotalExecutionTimeInMillis` está en
+[`docs/optimization-benchmark.md`](docs/optimization-benchmark.md). La
+implementación está verificada en código/IaC; las métricas de rendimiento
+requieren ejecutar las consultas en AWS y permanecen pendientes hasta contar
+con ese resultado.
 
 Con esta estructura ya no quedan carpetas duplicadas ni versiones paralelas del mismo proyecto.
 

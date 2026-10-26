@@ -1,6 +1,8 @@
 import base64
 import json
 
+import pytest
+
 from src.validate_and_store import handler as upload_module
 
 
@@ -113,4 +115,56 @@ def test_upload_rejects_unexpected_columns(monkeypatch):
 
     assert response['statusCode'] == 400
     assert 'unexpected column' in json.loads(response['body'])['errors'][0]
+    assert not s3.calls
+
+
+@pytest.mark.parametrize(
+    'event, expected_message',
+    [
+        ({'body': '{not-json'}, 'Request body must be valid JSON'),
+        ({'body': '{}'}, '"file" is required'),
+        ({'body': json.dumps({'file': 'not-base64!'})}, '"file" is not valid base64'),
+    ],
+)
+def test_upload_rejects_invalid_request_payload(monkeypatch, event, expected_message):
+    s3 = S3Stub()
+    monkeypatch.setattr(upload_module, 's3_client', s3)
+
+    response = upload_module.handler(event, None)
+
+    assert response['statusCode'] == 400
+    assert expected_message in json.loads(response['body'])['message']
+    assert not s3.calls
+
+
+def test_upload_rejects_empty_file(monkeypatch):
+    s3 = S3Stub()
+    monkeypatch.setattr(upload_module, 's3_client', s3)
+
+    response = upload_module.handler(_event(' '), None)
+
+    assert response['statusCode'] == 400
+    assert not s3.calls
+
+
+def test_upload_rejects_csv_without_header(monkeypatch):
+    s3 = S3Stub()
+    monkeypatch.setattr(upload_module, 's3_client', s3)
+
+    response = upload_module.handler(_event('\n'), None)
+
+    assert response['statusCode'] == 400
+    assert 'Missing required column(s)' in json.loads(response['body'])['errors'][0]
+    assert not s3.calls
+
+
+def test_upload_rejects_extra_values_in_row(monkeypatch):
+    s3 = S3Stub()
+    monkeypatch.setattr(upload_module, 's3_client', s3)
+    invalid_csv = CSV.replace(',18\n', ',18,extra\n')
+
+    response = upload_module.handler(_event(invalid_csv), None)
+
+    assert response['statusCode'] == 400
+    assert 'unexpected columns' in json.loads(response['body'])['errors'][0]
     assert not s3.calls

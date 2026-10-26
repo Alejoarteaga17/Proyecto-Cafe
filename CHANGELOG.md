@@ -4,6 +4,11 @@
 
 ### Added
 
+- Athena optimization benchmark queries and documentation for comparing
+  partition pruning, Parquet Gold and the unoptimized Bronze baseline.
+- Expanded local test coverage for batch validation, CSV upload edge cases,
+  CORS, IoT agronomic rules, simulator arguments and Glue job orchestration
+  helpers.
 - Approved medallion pipeline artifacts for Bronze, Silver and Gold.
 - Local validation, deduplication and aggregation transformations with tests.
 - Glue Job 1, Glue Job 2 and Step Functions definitions.

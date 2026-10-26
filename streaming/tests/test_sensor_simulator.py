@@ -1,5 +1,7 @@
 import random
 
+import pytest
+
 from simulator.simulate_coffee_sensors import build_payload
 from streaming_src.common.coffee_rules import validate_coffee_reading
 
@@ -18,3 +20,29 @@ def test_simulator_is_reproducible_with_seed():
     second = build_payload('ST-01', 'Lote_Norte_Arabica', random.Random(11))
 
     assert first == second
+
+
+def test_simulator_uses_default_random_generator(monkeypatch):
+    monkeypatch.setattr('simulator.simulate_coffee_sensors.random.uniform',
+                        lambda low, high: (low + high) / 2)
+
+    payload = build_payload('ST-02', 'Lote_Sur_Robusta')
+
+    assert payload['Temp_Max'] == 26.5
+    assert payload['Temp_Min'] == 19.25
+
+
+def test_simulator_arguments_support_finite_seeded_runs(monkeypatch):
+    from simulator import simulate_coffee_sensors
+
+    monkeypatch.setattr(
+        'sys.argv',
+        ['simulate_coffee_sensors.py', '--count', '2', '--interval', '0',
+         '--seed', '7'],
+    )
+
+    args = simulate_coffee_sensors._arguments()
+
+    assert args.count == 2
+    assert args.interval == 0
+    assert args.seed == 7
