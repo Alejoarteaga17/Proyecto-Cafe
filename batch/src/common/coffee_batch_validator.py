@@ -1,6 +1,7 @@
 """Validation for coffee historical batch rows."""
 
 import datetime as dt
+import math
 
 REQUIRED_COLUMNS = (
     'LON', 'LAT', 'YEAR', 'MM', 'DD', 'DOY', 'Date', 'Temp_Max',
@@ -81,6 +82,8 @@ def validate_row(row, row_number=None):
             errors.append(f'{prefix}"Date" month does not match "MM"')
         if date_value.day != values.get('DD'):
             errors.append(f'{prefix}"Date" day does not match "DD"')
+        if date_value.timetuple().tm_yday != values.get('DOY'):
+            errors.append(f'{prefix}"Date" day of year does not match "DOY"')
 
     if isinstance(values.get('YEAR'), int) and not 1900 <= values['YEAR'] <= 2100:
         errors.append(f'{prefix}"YEAR" is outside the supported range')
@@ -90,6 +93,15 @@ def validate_row(row, row_number=None):
         errors.append(f'{prefix}"DD" must be between 1 and 31')
     if isinstance(values.get('DOY'), int) and not 1 <= values['DOY'] <= 366:
         errors.append(f'{prefix}"DOY" must be between 1 and 366')
+    if (date_value is not None and values.get('DOY') == 366
+            and not _is_leap_year(date_value.year)):
+        errors.append(f'{prefix}"DOY" 366 is invalid for a non-leap year')
+    if (isinstance(values.get('LON'), float)
+            and not -180 <= values['LON'] <= 180):
+        errors.append(f'{prefix}"LON" must be between -180 and 180')
+    if (isinstance(values.get('LAT'), float)
+            and not -90 <= values['LAT'] <= 90):
+        errors.append(f'{prefix}"LAT" must be between -90 and 90')
     if (isinstance(values.get('Temp_Min'), float)
             and isinstance(values.get('Temp_Max'), float)):
         if values['Temp_Min'] > values['Temp_Max']:
@@ -118,9 +130,10 @@ def _to_float(value):
     if isinstance(value, bool):
         return None
     try:
-        return float(value)
+        number = float(value)
     except (TypeError, ValueError):
         return None
+    return number if math.isfinite(number) else None
 
 
 def _to_int(value):
@@ -129,3 +142,7 @@ def _to_int(value):
     except (TypeError, ValueError):
         return None
     return number if float(value) == number else None
+
+
+def _is_leap_year(year):
+    return year % 4 == 0 and (year % 100 != 0 or year % 400 == 0)

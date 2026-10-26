@@ -46,6 +46,10 @@ class _Spark:
         self.rows = rows or []
         self.read = self
         self.created = []
+        self.conf = types.SimpleNamespace(
+            values={},
+            set=lambda key, value: self.conf.values.update({key: value}),
+        )
 
     def json(self, _path):
         return _DataFrame(self.rows)
@@ -149,6 +153,9 @@ def test_job_one_arguments_and_write_json(monkeypatch):
     writer = spark.spark_session.created[0][1].write
     assert ('partitionBy', ('YEAR', 'MM')) in writer.calls
     assert ('json', 'out') in writer.calls
+    assert spark.spark_session.conf.values == {
+        'spark.sql.sources.partitionOverwriteMode': 'dynamic',
+    }
 
 
 def test_job_one_write_json_skips_empty_rows(monkeypatch):
@@ -158,6 +165,21 @@ def test_job_one_write_json_skips_empty_rows(monkeypatch):
     module._write_json(spark, [], 'out')
 
     assert spark.spark_session.created == []
+
+
+def test_job_one_iter_rows_uses_incremental_iterator(monkeypatch):
+    module = _load_module(monkeypatch, 'job_bronze_to_silver.py', 'job_one_iter')
+
+    class Frame:
+        def toLocalIterator(self):
+            return iter([
+                types.SimpleNamespace(asDict=lambda recursive=True: {'id': 1}),
+            ])
+
+        def collect(self):
+            raise AssertionError('collect should not be used when available')
+
+    assert list(module._iter_rows(Frame())) == [{'id': 1}]
 
 
 def test_job_one_main_reads_transforms_and_commits(monkeypatch):

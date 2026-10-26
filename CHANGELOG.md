@@ -24,6 +24,13 @@
 
 ### Changed
 
+- Job 1 ahora valida que `DOY` corresponda a `Date`, controla años no
+  bisiestos, rangos de latitud/longitud y valores numéricos no finitos.
+  Rechazos y duplicados quedan separados por `JOB_RUN_ID`, con métricas de
+  calidad por ejecución. Se eliminó `collect()` del recorrido normal de filas.
+- Silver ahora conserva una estrategia estable `YEAR/MM` y usa sobrescritura
+  dinámica de particiones en Glue Job 1, evitando borrar años o meses que no
+  forman parte de una nueva carga.
 - Corregida la lectura de particiones `YEAR/MM` en Glue Job 2 y agregada la
   autorización `s3:DeleteObject` requerida para reintentos controlados de Job 1.
 - Job 2 ahora registra las particiones Gold en Glue Data Catalog para que Athena

@@ -198,6 +198,7 @@
       const publishButton = document.getElementById('publishButton');
       const statusBox = document.getElementById('status');
       const responseBox = document.getElementById('response');
+      const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
 
       function setStatus(message, type = '') {
         statusBox.textContent = message;
@@ -264,6 +265,12 @@
           apiUrl = asUrl(apiUrlInput.value.trim(), 'La URL de API Gateway');
           if (!csvFile) {
             throw new Error('Selecciona o arrastra un archivo CSV.');
+          }
+          if (csvFile.size > MAX_UPLOAD_BYTES) {
+            throw new Error(
+              `El archivo supera el límite de ${formatBytes(MAX_UPLOAD_BYTES)} ` +
+              'de este endpoint.',
+            );
           }
           if (!apiKey) {
             throw new Error('La API Key es obligatoria.');

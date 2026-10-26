@@ -1,3 +1,5 @@
+import datetime as dt
+
 import pytest
 
 from src.common.coffee_batch_validator import BatchValidationError, validate_row, validate_rows
@@ -5,9 +7,11 @@ from src.pipeline.transformations import bronze_to_silver, silver_to_gold
 
 
 def _row(location='Armenia', day=23, temp=25):
+    observed_date = dt.date(2026, 8, day)
     return {
         'LON': '-75.68', 'LAT': '4.53', 'YEAR': '2026', 'MM': '8',
-        'DD': str(day), 'DOY': '234', 'Date': f'2026-08-{day:02d}',
+        'DD': str(day), 'DOY': str(observed_date.timetuple().tm_yday),
+        'Date': observed_date.isoformat(),
         'Temp_Max': str(temp), 'Temp_Min': '17', 'Humidity': '70',
         'Solar_Radiation': '500', 'Precipitation_mm': '2',
         'Location': location, 'Close_USD_60kg': '160',
@@ -81,6 +85,39 @@ def test_validate_row_rejects_non_integer_values_and_date_mismatch():
                for message in error.value.errors)
     assert any('"Date" month does not match "MM"' in message
                for message in error.value.errors)
+
+
+@pytest.mark.parametrize(
+    'changes, expected_error',
+    [
+        ({'DOY': '234'}, 'day of year does not match'),
+        ({'LON': '-181'}, '"LON" must be between'),
+        ({'LAT': '91'}, '"LAT" must be between'),
+        ({'Humidity': 'NaN'}, '"Humidity" must be numeric'),
+        ({'Solar_Radiation': 'Infinity'}, '"Solar_Radiation" must be numeric'),
+    ],
+)
+def test_validate_row_rejects_inconsistent_coordinates_and_non_finite_values(
+        changes, expected_error):
+    row = _row()
+    row.update(changes)
+
+    with pytest.raises(BatchValidationError, match=expected_error):
+        validate_row(row, 2)
+
+
+def test_validate_row_accepts_day_366_only_in_leap_year():
+    row = _row()
+    row.update({
+        'YEAR': '2024', 'MM': '12', 'DD': '31', 'DOY': '366',
+        'Date': '2024-12-31',
+    })
+    validate_row(row, 2)
+
+    row['YEAR'] = '2023'
+    row['Date'] = '2023-12-31'
+    with pytest.raises(BatchValidationError, match='non-leap year'):
+        validate_row(row, 2)
 
 
 def test_validate_rows_rejects_empty_and_too_many_rows():

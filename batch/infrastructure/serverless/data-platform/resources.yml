@@ -81,6 +81,7 @@ Resources:
         '--output_path': s3://${self:custom.bucketName}/silver/historical/
         '--rejected_path': s3://${self:custom.bucketName}/silver/rejected/
         '--duplicate_path': s3://${self:custom.bucketName}/silver/duplicates/
+        '--quality_path': s3://${self:custom.bucketName}/silver/quality/
 
   SilverToGoldJob:
     Type: AWS::Glue::Job

@@ -50,10 +50,15 @@ Usa `serverless remove` en el orden inverso al despliegue para evitar dependenci
 - La API recibe JSON con `file`, cuyo valor es el CSV codificado en Base64.
 - El archivo debe ser UTF-8, contener exactamente las 19 columnas requeridas y
   no superar 5 MiB ni 300 filas.
+- El límite de 5 MiB es intencional: el archivo viaja completo dentro de una
+  invocación síncrona de API Gateway/Lambda, con expansión adicional por
+  Base64. No se debe elevar sin cambiar el contrato de transporte.
 - Lambda valida estructura, tipos, fechas, rangos y consistencia antes de
   escribir en `bronze/historical/`.
 - Glue Job 1 conserva filas rechazadas y duplicadas en `silver/rejected/` y
-  `silver/duplicates/`, y escribe filas válidas particionadas por `YEAR/MM`.
+  `silver/duplicates/`, separadas por `run_id`, y escribe filas válidas
+  particionadas por `YEAR/MM`. También publica métricas de calidad por
+  ejecución en `silver/quality/`.
 - Glue Job 2 lee Silver JSON y escribe Gold Parquet particionado por `YEAR/MM`.
 - Step Functions ejecuta Job 2 únicamente después del éxito de Job 1.
 
