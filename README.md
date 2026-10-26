@@ -17,19 +17,19 @@
 
 ## Resumen
 
-`Cultivo de Café Inteligente` es una plataforma híbrida para apoyar la toma de decisiones agronómicas en plantaciones de café. Integra datos históricos del cultivo con telemetría en tiempo real generada por sensores IoT, usando MongoDB Atlas como fuente de verdad operativa y Amazon S3 con patrón medallón para almacenamiento analítico.
+`Cultivo de Café Inteligente` es una plataforma para apoyar la toma de decisiones agronómicas en plantaciones de café. Integra datos históricos del cultivo con telemetría en tiempo real generada por sensores IoT, usando Amazon S3 como data lake medallion para almacenamiento analítico.
 
 El proyecto sigue un enfoque de data engineering aplicado: validación, limpieza, particionado, ingestión en streaming, alertas agronómicas y diseño de pipelines serverless sobre AWS, manteniendo el mismo patrón de desacoplamiento y observabilidad para ambos flujos.
 
 ### Pipeline batch: datos históricos del café
 
-El flujo batch ingresa datasets históricos (CSV/Kaggle) mediante un endpoint REST en API Gateway. La validación inicial exige las 19 columnas del dataset de café, aplica imputación cuando faltan valores como `Solar_Radiation` y guarda el resultado en la capa Silver del data lake. Luego una segunda etapa realiza particionado por `YEAR/MM/Location` y produce la capa Gold para análisis y persistencia.
+El flujo batch recibe un CSV mediante API Gateway y una URL prefirmada. El archivo original se guarda en Bronze; los scripts Glue convierten y validan los datos hacia Silver y generan agregados Gold. La provisión automática de Glue, Step Functions, Data Catalog y Athena es una etapa pendiente de la IaC.
 
 
 
 ### Pipeline streaming: sensores de cultivo
 
-Los sensores de cultivo publican mediciones de temperatura, humedad, radiación, pH del suelo y nutrientes vía MQTT. Las lecturas se validan contra reglas agronómicas del café antes de persistirse en MongoDB Atlas. Si un mensaje falla, se envía a una DLQ para revisión operativa y alertas por CloudWatch/SNS.
+Los sensores de cultivo publican mediciones de temperatura, humedad, radiación, pH del suelo y nutrientes vía MQTT. Las lecturas se validan contra reglas agronómicas y los mensajes inválidos se envían a una DLQ para revisión operativa.
 
 
 
@@ -41,10 +41,11 @@ Ambos flujos notifican eventos críticos mediante alarmas de CloudWatch y un top
 
 - **`batch/`**: flujo de ingestión histórica y validación de datos por lote.
   - Incluye su `serverless`, `src`, `database`, `tests` e infraestructura propia dentro de `batch/infrastructure`.
-- **`streaming/`**: flujo de sensores y procesamiento en tiempo real.
-  - Incluye su `serverless`, `src`, `database`, `tests` e infraestructura propia dentro de `streaming/infrastructure`.
+- **`batch/src/`**: contiene también los módulos de sensores heredados; su
+  separación en un flujo streaming independiente queda pendiente.
 - **`frontend/`**: interfaz ligera para pruebas de carga CSV y validación del backend.
-- **`docs/`**: diagramas de arquitectura generados con `python3 architecture.py`.
+- **`docs/`**: documentación y changelog del proyecto.
+- **`quality-governance/`**: diccionario, catálogo, reglas de calidad, gobernanza y controles de calidad de código.
 - **`.envs/`**: variables de entorno compartidas del proyecto.
 
 La organización por flujo deja cada pipeline con su propio contexto funcional y su infraestructura asociada, sin depender de carpetas legacy del repositorio.

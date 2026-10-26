@@ -2,7 +2,10 @@
 
 ## Resumen
 
-`infrastructure` contiene los stacks compartidos de AWS del proyecto de café: el data lake S3, colas SQS con DLQ, secretos de MongoDB Atlas, IoT Core y alertas operativas.
+`infrastructure` contiene stacks compartidos de AWS del proyecto de café:
+data lake S3, colas SQS con DLQ, secretos, IoT Core y alertas operativas.
+Los stacks SQS, secretos e IoT pertenecen a flujos existentes y no deben
+confundirse con el nuevo batch medallion.
 
 El bucket compartido de S3 funciona como data lake para los flujos históricos y streaming. Sus zonas lógicas son:
 
@@ -14,7 +17,9 @@ gold/    # datos agregados para analítica
 
 Las zonas son prefijos dentro del mismo bucket para conservar un único punto de administración, cifrado, versionado y control de acceso. El stack no crea tres buckets distintos porque la separación lógica permite compartir políticas y facilita el gobierno del lago sin duplicar infraestructura.
 
-La arquitectura actual del proyecto no incluye PostgreSQL/RDS ni ETL hacia un motor relacional; MongoDB Atlas y S3 son la base del diseño activo.
+El batch nuevo no utiliza MongoDB. Los componentes de MongoDB que aún aparecen
+en otros módulos pertenecen al flujo legado o streaming y se retirarán cuando
+ese flujo tenga su propia persistencia en S3.
 
 ## Configuración
 
@@ -38,10 +43,10 @@ Cada stack vive dentro de `serverless/<stack>` y se despliega de forma independi
 Orden recomendado:
 
 1. `serverless/storage`
-2. `serverless/queue`
-3. `serverless/secrets`
-4. `serverless/iot`
-5. `serverless/alerts`
+2. El stack batch (`../../serverless`)
+3. `serverless/queue`, `serverless/secrets` e `serverless/iot` solo si el flujo
+   legado/streaming los requiere
+4. `serverless/alerts`
 
 ### Eliminación
 

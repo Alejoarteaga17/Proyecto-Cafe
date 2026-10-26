@@ -4,7 +4,10 @@
 
 `batch` contiene el pipeline de ingestión histórica del proyecto de café: carga mediante API, transformación con AWS Glue, particionado y almacenamiento analítico en el data lake S3.
 
-El pipeline está desplegado como varios stacks independientes bajo `serverless/` y usa su infraestructura propia dentro de `batch/infrastructure`.
+La IaC está separada en stacks bajo `serverless/` e `infrastructure/serverless/`.
+Actualmente están implementados el stack de almacenamiento S3 y el servicio de
+carga de URL prefirmada. Los scripts Glue existen, pero sus Jobs, catálogo y
+orquestación aún deben provisionarse antes de declarar completo el pipeline.
 
 ## Arquitectura del pipeline
 
@@ -47,18 +50,6 @@ Crea los archivos en `.envs` con los valores requeridos por AWS, Serverless y el
 
 El despliegue requiere AWS CLI, Serverless Framework v4 y un perfil AWS con permisos para CloudFormation, S3, Lambda, API Gateway, Step Functions, Glue, Athena, IAM y CloudWatch Logs. Las credenciales se configuran fuera del repositorio; no deben copiarse al código.
 
-### Migraciones de base de datos
-
-Para aplicar migraciones, usa `database/migrations/migrate.sh`.
-
-Si necesitas revertir, añade `--downgrade`.
-
-### Sembrado de datos
-
-Para poblar MongoDB Atlas con datos sintéticos realistas, usa `database/seeders/seed.sh`.
-
-Solo se permite en `dev` y `test`, verificando la etiqueta `STAGE` del secreto `MongoCredentials`.
-
 ### Despliegue
 
 Se usa Serverless Framework y cada stack vive dentro de `serverless/` y `infrastructure/serverless/` del mismo flujo.
@@ -66,10 +57,67 @@ Se usa Serverless Framework y cada stack vive dentro de `serverless/` y `infrast
 Orden recomendado:
 
 1. `infrastructure/serverless/storage`
-2. `infrastructure/serverless/queue`
-3. `infrastructure/serverless/secrets`
-4. `serverless`
-5. Consultas de Athena de validación
+2. `serverless`
+3. Jobs Glue y sus scripts publicados en S3
+4. Step Functions y evento de entrada
+5. Glue Data Catalog
+6. Athena
+
+Para validar solo lo implementado actualmente, ejecuta los pasos 1 y 2 y
+comprueba que el CSV aparezca en `bronze/uploads/`.
+
+### Despliegue en PowerShell
+
+Usa un perfil de AWS IAM Identity Center ya configurado y no guardes
+credenciales en el repositorio:
+
+```powershell
+$env:AWS_PROFILE = "coffee-dev"
+$env:AWS_DEFAULT_REGION = "us-east-1"
+$env:DEPLOY_APP = "coffee-cultivation"
+$env:DEVELOPER = "alejandra-suarez"
+
+aws sso login --profile coffee-dev
+aws sts get-caller-identity --profile coffee-dev
+```
+
+Empaqueta y despliega el almacenamiento:
+
+```powershell
+cd batch/infrastructure/serverless/storage
+npx.cmd serverless package --stage dev --aws-profile coffee-dev
+npx.cmd serverless deploy --stage dev --aws-profile coffee-dev
+```
+
+Obtén el bucket y despliega la API:
+
+```powershell
+$bucket = aws ssm get-parameter `
+  --name "/coffee-cultivation-storage/RawReportsBucketName" `
+  --query "Parameter.Value" --output text
+
+cd ../../../serverless
+npx.cmd serverless package --stage dev --aws-profile coffee-dev
+npx.cmd serverless deploy --stage dev --aws-profile coffee-dev
+npx.cmd serverless info --stage dev --aws-profile coffee-dev
+```
+
+Solicita una URL prefirmada al endpoint mostrado por `serverless info` y sube
+el CSV con `PUT` y `Content-Type: text/csv`. Después comprueba Bronze:
+
+```powershell
+aws s3 ls "s3://$bucket/bronze/uploads/" --recursive
+```
+
+La ejecución completa no puede declararse validada hasta que existan recursos
+`AWS::Glue::Job`, `AWS::StepFunctions::StateMachine`,
+`AWS::Events::Rule`, `AWS::Glue::Database` y `AWS::Athena::WorkGroup` en la
+plantilla empaquetada. Compruébalo antes de desplegar la siguiente fase:
+
+```powershell
+Get-Content .serverless/cloudformation-template-update-stack.json |
+  Select-String "AWS::Glue|AWS::StepFunctions|AWS::Events|AWS::Athena"
+```
 
 ### Eliminación
 
