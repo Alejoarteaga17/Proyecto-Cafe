@@ -138,7 +138,8 @@ def test_job_one_arguments_and_write_json(monkeypatch):
             'job.py', '--JOB_NAME', 'job-one', '--JOB_ID', 'id',
             '--JOB_RUN_ID', 'run', '--input_path', 'in',
             '--output_path', 'out', '--rejected_path', 'reject',
-            '--duplicate_path', 'duplicate',
+            '--duplicate_path', 'duplicate', '--catalog_database', 'coffee',
+            '--catalog_table', 'silver',
         ],
     )
 
@@ -190,6 +191,8 @@ def test_job_one_main_reads_transforms_and_commits(monkeypatch):
         'output_path': 's3://out',
         'rejected_path': 's3://reject',
         'duplicate_path': 's3://duplicate',
+        'catalog_database': 'coffee',
+        'catalog_table': 'silver',
     }
     source_rows = [types.SimpleNamespace(
         asDict=lambda recursive=True: {'YEAR': 2026, 'MM': 8}
@@ -214,12 +217,55 @@ def test_job_one_main_reads_transforms_and_commits(monkeypatch):
     monkeypatch.setattr(module, '_arguments', lambda: args)
     monkeypatch.setattr(module, 'GlueContext', Context)
     monkeypatch.setattr(module, 'bronze_to_silver', lambda rows: result)
+    monkeypatch.setattr(module, '_register_partitions', lambda *_args: None)
 
     module.main()
 
     assert _FakeJob.last.initialized == ('job-one', args)
     assert _FakeJob.last.committed is True
     assert spark.created[0][1].write.calls[-1] == ('json', 's3://out')
+
+
+def test_job_one_registers_and_updates_unique_partitions(monkeypatch):
+    module = _load_module(
+        monkeypatch, 'job_bronze_to_silver.py', 'job_one_partitions')
+
+    class GlueClient:
+        class exceptions:
+            class AlreadyExistsException(Exception):
+                pass
+
+        def __init__(self):
+            self.created = []
+            self.updated = []
+
+        def create_partition(self, **kwargs):
+            self.created.append(kwargs)
+
+        def update_partition(self, **kwargs):
+            self.updated.append(kwargs)
+
+    client = GlueClient()
+    monkeypatch.setattr(
+        module, 'boto3', types.SimpleNamespace(client=lambda _name: client))
+    args = {
+        'catalog_database': 'coffee',
+        'catalog_table': 'silver',
+        'output_path': 's3://bucket/silver/historical/',
+    }
+    rows = [
+        {'YEAR': 2024, 'MM': 1},
+        {'YEAR': 2024, 'MM': 1},
+        {'YEAR': 2025, 'MM': 3},
+    ]
+
+    module._register_partitions(args, rows)
+
+    assert len(client.created) == 2
+    assert client.created[0]['PartitionInput']['Values'] == ['2024', '1']
+    assert client.created[0]['PartitionInput']['StorageDescriptor'][
+        'Location'
+    ] == 's3://bucket/silver/historical/YEAR=2024/MM=1/'
 
 
 def test_job_two_registers_unique_partitions(monkeypatch):

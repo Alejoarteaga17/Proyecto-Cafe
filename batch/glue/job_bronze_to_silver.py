@@ -4,6 +4,7 @@ import argparse
 import sys
 from datetime import date
 
+import boto3
 from awsglue.context import GlueContext
 from awsglue.job import Job
 from pyspark.context import SparkContext
@@ -42,6 +43,8 @@ def main():
         len(result.valid_rows) + len(result.rejected_rows)
         + len(result.duplicate_rows),
         result)
+    if result.valid_rows:
+        _register_partitions(args, result.valid_rows)
     job.commit()
 
 
@@ -93,6 +96,69 @@ def _write_json(glue_context, rows, path, partitioned=False):
         writer.json(path)
 
 
+def _register_partitions(args, rows):
+    glue = boto3.client('glue')
+    seen = set()
+    for row in rows:
+        values = [str(row['YEAR']), str(row['MM'])]
+        partition_key = tuple(values)
+        if partition_key in seen:
+            continue
+        seen.add(partition_key)
+        partition_input = _partition_input(args, values)
+        try:
+            glue.create_partition(
+                DatabaseName=args['catalog_database'],
+                TableName=args['catalog_table'],
+                PartitionInput=partition_input,
+            )
+        except glue.exceptions.AlreadyExistsException:
+            glue.update_partition(
+                DatabaseName=args['catalog_database'],
+                TableName=args['catalog_table'],
+                PartitionValueList=values,
+                PartitionInput=partition_input,
+            )
+
+
+def _partition_input(args, values):
+    return {
+        'Values': values,
+        'StorageDescriptor': {
+            'Columns': [
+                {'Name': 'LON', 'Type': 'double'},
+                {'Name': 'LAT', 'Type': 'double'},
+                {'Name': 'DD', 'Type': 'int'},
+                {'Name': 'DOY', 'Type': 'int'},
+                {'Name': 'Date', 'Type': 'string'},
+                {'Name': 'Temp_Max', 'Type': 'double'},
+                {'Name': 'Temp_Min', 'Type': 'double'},
+                {'Name': 'Humidity', 'Type': 'double'},
+                {'Name': 'Solar_Radiation', 'Type': 'double'},
+                {'Name': 'Precipitation_mm', 'Type': 'double'},
+                {'Name': 'Location', 'Type': 'string'},
+                {'Name': 'Close_USD_60kg', 'Type': 'double'},
+                {'Name': 'Is_Weekend', 'Type': 'string'},
+                {'Name': 'Is_Interpolated', 'Type': 'string'},
+                {'Name': 'brl', 'Type': 'double'},
+                {'Name': 'cny', 'Type': 'double'},
+                {'Name': 'mxn', 'Type': 'double'},
+            ],
+            'Location': (
+                f"{args['output_path'].rstrip('/')}/"
+                f"YEAR={values[0]}/MM={values[1]}/"
+            ),
+            'InputFormat': 'org.apache.hadoop.mapred.TextInputFormat',
+            'OutputFormat': (
+                'org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat'
+            ),
+            'SerdeInfo': {
+                'SerializationLibrary': 'org.openx.data.jsonserde.JsonSerDe',
+            },
+        },
+    }
+
+
 def _arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument('--JOB_NAME', required=True)
@@ -103,6 +169,8 @@ def _arguments():
     parser.add_argument('--rejected_path', required=True)
     parser.add_argument('--duplicate_path', required=True)
     parser.add_argument('--quality_path')
+    parser.add_argument('--catalog_database', required=True)
+    parser.add_argument('--catalog_table', required=True)
     return vars(parser.parse_args())
 
 

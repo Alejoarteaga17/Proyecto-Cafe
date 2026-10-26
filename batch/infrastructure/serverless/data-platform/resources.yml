@@ -82,6 +82,8 @@ Resources:
         '--rejected_path': s3://${self:custom.bucketName}/silver/rejected/
         '--duplicate_path': s3://${self:custom.bucketName}/silver/duplicates/
         '--quality_path': s3://${self:custom.bucketName}/silver/quality/
+        '--catalog_database': !Ref GlueDatabase
+        '--catalog_table': coffee_historical_silver
 
   SilverToGoldJob:
     Type: AWS::Glue::Job

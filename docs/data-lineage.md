@@ -8,6 +8,8 @@
 4. S3 Bronze -> Glue Job 1 -> S3 Silver: validación, normalización,
    deduplicación, particionado y salidas de calidad. Los rechazos, duplicados
    y métricas se conservan bajo `run_id=<JOB_RUN_ID>` para cada ejecución.
+   Job 1 registra las particiones `YEAR/MM` de Silver en Glue Data Catalog
+   para que Athena pueda aplicar partition pruning.
 5. S3 Silver -> Glue Job 2 -> S3 Gold: agregación analítica a Parquet.
 6. Step Functions inicia Glue Job 1 y, solo tras éxito, Glue Job 2.
 7. S3 Gold -> Glue Data Catalog -> Athena -> QuickSight.

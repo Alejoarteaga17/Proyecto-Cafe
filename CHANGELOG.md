@@ -24,6 +24,8 @@
 
 ### Changed
 
+- Job 1 ahora registra y actualiza las particiones `YEAR/MM` de Silver en Glue
+  Data Catalog, habilitando consultas de Athena sobre el histórico validado.
 - Job 1 ahora valida que `DOY` corresponda a `Date`, controla años no
   bisiestos, rangos de latitud/longitud y valores numéricos no finitos.
   Rechazos y duplicados quedan separados por `JOB_RUN_ID`, con métricas de

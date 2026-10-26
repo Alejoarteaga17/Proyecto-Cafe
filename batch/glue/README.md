@@ -20,6 +20,13 @@ permite reprocesar un mes sin borrar otros años. La reejecución debe leer el
 mismo alcance de Bronze para que la deduplicación y la validación sean
 deterministas.
 
+Job 1 registra o actualiza en Glue Data Catalog cada partición
+`YEAR/MM` escrita en Silver. La tabla `coffee_historical_silver` puede
+consultarse desde Athena con filtros sobre ambas claves, por ejemplo
+`WHERE YEAR = 2024 AND MM = 1`. Las particiones se registran con valores
+string, que es el formato requerido por la API de Glue aunque las claves del
+catálogo sean de tipo `int`.
+
 Las salidas de rechazos y duplicados se escriben bajo
 `run_id=<JOB_RUN_ID>` para conservar el diagnóstico de cada ejecución. El
 resumen de calidad en `silver/quality/run_id=<JOB_RUN_ID>/` incluye conteos de
