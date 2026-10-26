@@ -231,10 +231,14 @@ def test_job_two_registers_unique_partitions(monkeypatch):
                 pass
 
         def __init__(self):
-            self.request = None
+            self.created = []
+            self.updated = []
 
-        def batch_create_partition(self, **kwargs):
-            self.request = kwargs
+        def create_partition(self, **kwargs):
+            self.created.append(kwargs)
+
+        def update_partition(self, **kwargs):
+            self.updated.append(kwargs)
 
     client = GlueClient()
     fake_boto3 = types.SimpleNamespace(client=lambda _name: client)
@@ -252,9 +256,9 @@ def test_job_two_registers_unique_partitions(monkeypatch):
 
     module._register_partitions(args, summaries)
 
-    assert len(client.request['PartitionInputList']) == 2
-    assert client.request['PartitionInputList'][0]['Values'] == ['2026', '8']
-    assert client.request['PartitionInputList'][0]['StorageDescriptor'][
+    assert len(client.created) == 2
+    assert client.created[0]['PartitionInput']['Values'] == ['2026', '8']
+    assert client.created[0]['PartitionInput']['StorageDescriptor'][
         'Location'
     ] == 's3://bucket/gold/YEAR=2026/MM=8/'
 
@@ -267,8 +271,11 @@ def test_job_two_ignores_existing_partitions(monkeypatch):
             class AlreadyExistsException(Exception):
                 pass
 
-        def batch_create_partition(self, **_kwargs):
+        def create_partition(self, **_kwargs):
             raise self.exceptions.AlreadyExistsException()
+
+        def update_partition(self, **kwargs):
+            self.request = kwargs
 
     monkeypatch.setattr(
         module,

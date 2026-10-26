@@ -47,7 +47,6 @@ def main():
 
 def _register_partitions(args, summaries):
     glue = boto3.client('glue')
-    partitions = []
     seen = set()
     for summary in summaries:
         values = [
@@ -58,45 +57,54 @@ def _register_partitions(args, summaries):
         if partition_key in seen:
             continue
         seen.add(partition_key)
-        partitions.append({
-            # Glue API requires partition values as strings, even for int keys.
-            'Values': values,
-            'StorageDescriptor': {
-                'Columns': [
-                    {'Name': 'Location', 'Type': 'string'},
-                    {'Name': 'record_count', 'Type': 'bigint'},
-                    {'Name': 'avg_temp_max', 'Type': 'double'},
-                    {'Name': 'avg_temp_min', 'Type': 'double'},
-                    {'Name': 'avg_humidity', 'Type': 'double'},
-                    {'Name': 'total_precipitation_mm', 'Type': 'double'},
-                    {'Name': 'avg_solar_radiation', 'Type': 'double'},
-                    {'Name': 'avg_close_usd_60kg', 'Type': 'double'},
-                ],
-                'Location': (
-                    f"{args['output_path'].rstrip('/')}/"
-                    f"YEAR={values[0]}/MM={values[1]}/"
-                ),
-                'InputFormat': (
-                    'org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat'
-                ),
-                'OutputFormat': (
-                    'org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat'
-                ),
-                'SerdeInfo': {
-                    'SerializationLibrary': (
-                        'org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe'
-                    )
-                },
+        partition_input = _partition_input(args, values)
+        try:
+            glue.create_partition(
+                DatabaseName=args['catalog_database'],
+                TableName=args['catalog_table'],
+                PartitionInput=partition_input,
+            )
+        except glue.exceptions.AlreadyExistsException:
+            glue.update_partition(
+                DatabaseName=args['catalog_database'],
+                TableName=args['catalog_table'],
+                PartitionValueList=values,
+                PartitionInput=partition_input,
+            )
+
+
+def _partition_input(args, values):
+    return {
+        # Glue API requires partition values as strings, even for int keys.
+        'Values': values,
+        'StorageDescriptor': {
+            'Columns': [
+                {'Name': 'Location', 'Type': 'string'},
+                {'Name': 'record_count', 'Type': 'bigint'},
+                {'Name': 'avg_temp_max', 'Type': 'double'},
+                {'Name': 'avg_temp_min', 'Type': 'double'},
+                {'Name': 'avg_humidity', 'Type': 'double'},
+                {'Name': 'total_precipitation_mm', 'Type': 'double'},
+                {'Name': 'avg_solar_radiation', 'Type': 'double'},
+                {'Name': 'avg_close_usd_60kg', 'Type': 'double'},
+            ],
+            'Location': (
+                f"{args['output_path'].rstrip('/')}/"
+                f"YEAR={values[0]}/MM={values[1]}/"
+            ),
+            'InputFormat': (
+                'org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat'
+            ),
+            'OutputFormat': (
+                'org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat'
+            ),
+            'SerdeInfo': {
+                'SerializationLibrary': (
+                    'org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe'
+                )
             },
-        })
-    try:
-        glue.batch_create_partition(
-            DatabaseName=args['catalog_database'],
-            TableName=args['catalog_table'],
-            PartitionInputList=partitions,
-        )
-    except glue.exceptions.AlreadyExistsException:
-        pass
+        },
+    }
 
 
 def _arguments():
