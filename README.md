@@ -6,7 +6,7 @@
   - [Resumen](#resumen)
     - [Pipeline batch: datos históricos del café](#pipeline-batch-datos-históricos-del-café)
     - [Pipeline streaming: sensores de cultivo](#pipeline-streaming-sensores-de-cultivo)
-    - [Observabilidad](#observabilidad)
+    - [Orquestación, consulta y alcance](#orquestación-consulta-y-alcance)
     - [Estructura del repositorio](#estructura-del-repositorio)
   - [Configuración](#configuración)
     - [Contenedor de desarrollo](#contenedor-de-desarrollo)
@@ -52,8 +52,8 @@ documentación no implica que exista un dashboard desplegado.
   infraestructura IoT Core → Data Firehose → S3 Bronze.
 - **`batch/infrastructure/serverless/data-platform/`**: Glue, Step Functions, Glue Data Catalog y Athena.
 - **`frontend/`**: interfaz ligera para pruebas de carga CSV y validación del backend.
-- **`docs/`**: diagramas de arquitectura generados con `python3 architecture.py`.
-- **`docs/`**: arquitectura, contratos, diccionario, catálogo, lineage, RACI y estado de aceptación.
+- **`docs/`**: arquitectura, contratos, diccionario, catálogo, lineage, RACI,
+  optimizaciones y estado de aceptación.
 - **`batch/benchmarks/`**: consultas de Athena para comparar bytes escaneados y tiempo antes/después de las optimizaciones.
 
 La carpeta `streaming/` contiene únicamente la implementación aprobada del
@@ -151,6 +151,14 @@ Los stacks dependen de parámetros SSM y del bucket creado por el stack
    los scripts ya están publicados en el bucket y no cambiaron, no repitas este
    paso para usar la plataforma.
 
+   Para el flujo IoT, publica también sus jobs antes de ejecutar la state
+   machine IoT:
+
+   ```powershell
+   cd /app/streaming/glue
+   ./publish-scripts.ps1 -BucketName <data-lake-bucket> -Region us-east-1
+   ```
+
 3. **Crear la plataforma de procesamiento y consulta** (Glue Jobs, Step
    Functions, Glue Data Catalog y Athena):
 
@@ -177,11 +185,12 @@ Los stacks dependen de parámetros SSM y del bucket creado por el stack
    serverless deploy --stage dev
    ```
 
-Después del despliegue, configura de forma segura el certificado X.509 del
-Thing IoT y ejecuta el simulador según la guía de
-[`streaming/README.md`](streaming/README.md). La asociación del certificado
-requiere una operación adicional de seguridad de AWS y no queda afirmada por
-el stack de Serverless.
+Después del despliegue, ejecuta el simulador según la guía de
+[`streaming/README.md`](streaming/README.md). El modo `--publish` usa las
+credenciales AWS del entorno; si se usará un cliente MQTT externo, configura
+de forma segura el certificado X.509 del Thing IoT. La asociación del
+certificado requiere una operación adicional de seguridad de AWS y no queda
+afirmada por el stack de Serverless.
 
 #### Validación previa y consideraciones
 
@@ -266,15 +275,6 @@ cd batch/glue
 ./publish-scripts.ps1 -BucketName <data-lake-bucket> -Region us-east-1
 ```
 
-Para tu entorno `dev`, el comando exacto es:
-
-```powershell
-cd batch/glue
-./publish-scripts.ps1 `
-  -BucketName coffee-cultivation-coffee-data-lake-dev-aaccode `
-  -Region us-east-1
-```
-
 La publicación actualiza `glue/job_bronze_to_silver.py`,
 `glue/job_silver_to_gold.py` y `glue/coffee-pipeline.zip` en S3. Después,
 ejecuta nuevamente `HistoricalEtlStateMachine` desde Step Functions. La próxima
@@ -324,9 +324,6 @@ se ejecutan desde las rutas del repositorio del equipo anfitrión, por ejemplo:
 cd batch/glue
 ./publish-scripts.ps1 -BucketName <data-lake-bucket> -Region us-east-1
 ```
-
-Para tu entorno `dev`, reemplaza `<data-lake-bucket>` por
-`coffee-cultivation-coffee-data-lake-dev-aaccode`.
 
 Para un despliegue reproducible se recomienda usar Docker, porque el proyecto
 instala allí AWS CLI, Serverless, Python y las herramientas de validación. La
@@ -445,33 +442,32 @@ necesario usar Postman.
 
 #### Activar el flujo de sensores IoT
 
-El stack IoT permanece desplegado y Firehose puede recibir eventos sin volver a
-desplegarlo. Para enviar eventos se necesita además un certificado X.509
-activo, asociado al Thing creado por el stack y con la política IoT adjunta.
-Esa asociación no la realiza el template de Serverless.
-
-El simulador incluido actualmente **genera y valida eventos, pero solo los
-imprime en la salida estándar**; no es todavía un cliente MQTT. Por tanto,
-ejecutarlo así no activa el streaming en AWS:
+El stack IoT y sus jobs deben estar desplegados/publicados antes de enviar
+eventos. El simulador valida cada payload y, con `--publish`, publica
+directamente mediante el endpoint IoT Data ATS usando las credenciales AWS
+del entorno. Este modo no usa un certificado X.509 del Thing.
 
 ```bash
 cd /app/streaming
-python3 simulator/simulate_coffee_sensors.py --count 3 --seed 7 --interval 0
+python3 simulator/simulate_coffee_sensors.py \
+  --publish --count 3 --seed 7 --interval 2
 ```
 
-Para publicar eventos reales, usa un cliente MQTT compatible con AWS IoT Core,
-configurado con el endpoint IoT de la cuenta, el certificado del Thing, la
-clave privada y el certificado raíz de Amazon Trust Services. Publica cada
-payload en:
+El simulador obtiene automáticamente el endpoint IoT Data ATS y publica en:
 
 ```text
-sensors/coffee/<ThingName>/data
+sensors/coffee/<sensor-id>/data
 ```
 
-El `<ThingName>` debe ser el Thing asociado al certificado. El stack añade
-`sensor_id` a partir del tercer segmento del topic y después entrega el
-evento a Firehose. Verifica el nombre del Thing con el parámetro SSM creado
-por el stack o desde la consola de IoT Core:
+La identidad AWS usada necesita `iot:DescribeEndpoint` y `iot:Publish` para el
+topic. Si se usa un cliente MQTT externo en lugar del simulador, sí se requiere
+un certificado X.509 activo asociado al Thing y la política IoT correspondiente.
+El stack no crea ni asocia ese certificado.
+
+El stack añade `sensor_id` a partir del topic y Firehose entrega los eventos
+en Bronze. Tras el intervalo de buffering configurado, verifica que aparezca
+un objeto GZIP en `bronze/iot/year=YYYY/month=MM/day=DD/`. Un objeto en
+`bronze/iot-errors/` indica un fallo de entrega.
 
 ```bash
 aws ssm get-parameter \
@@ -481,16 +477,8 @@ aws ssm get-parameter \
   --region us-east-1
 ```
 
-Después de publicar, espera el intervalo de buffering configurado de Firehose
-(hasta 60 segundos o 5 MiB) y verifica que aparezca un objeto GZIP en
-`bronze/iot/year=YYYY/month=MM/day=DD/`. Un evento en la carpeta
-`bronze/iot-errors/` indica un fallo de entrega y debe investigarse; no debe
-tratarse como una entrega exitosa.
-
 La creación y asociación del certificado son operaciones de seguridad de AWS
-que no están automatizadas en el repositorio. Si todavía no existe esa
-configuración, primero debe completarse en IoT Core; no basta con ejecutar el
-simulador local.
+que no están automatizadas en el repositorio.
 
 ---
 

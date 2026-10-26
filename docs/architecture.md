@@ -4,12 +4,12 @@
 
 | Componente | Estado | Evidencia |
 | --- | --- | --- |
-| Historical CSV -> API Gateway -> Lambda -> S3 Bronze | IMPLEMENTED local / NOT VERIFIED AWS | `batch/serverless/functions.yml`, `batch/src/validate_and_store/handler.py`, `batch/tests/test_upload_handler.py` |
-| IoT sensors -> IoT Core -> Data Firehose -> S3 Bronze | IMPLEMENTED local/IaC / NOT VERIFIED AWS | `streaming/infrastructure/serverless/iot/iot.yml`, `streaming/simulator/simulate_coffee_sensors.py`, `streaming/tests/test_sensor_simulator.py` |
-| Bronze -> Glue Job 1 -> Silver | IMPLEMENTED local / NOT VERIFIED AWS | `batch/glue/job_bronze_to_silver.py`, `batch/tests/test_transformations.py` |
-| Silver -> Glue Job 2 -> Gold | IMPLEMENTED local / NOT VERIFIED AWS | `batch/glue/job_silver_to_gold.py`, `batch/tests/test_transformations.py` |
-| Step Functions histórico e IoT | IMPLEMENTADO en IaC, NOT VERIFIED en AWS | `batch/infrastructure/serverless/data-platform/resources.yml` |
-| Glue Data Catalog y Athena | IMPLEMENTADO en IaC, NOT VERIFIED en AWS | `batch/infrastructure/serverless/data-platform/resources.yml` |
+| Historical CSV -> API Gateway -> Lambda -> S3 Bronze | COMPLETE; validado localmente y end-to-end en AWS de desarrollo | `batch/serverless/functions.yml`, `batch/src/validate_and_store/handler.py`, `batch/tests/test_upload_handler.py`, `docs/acceptance-checklist.md` |
+| IoT sensors -> IoT Core -> Data Firehose -> S3 Bronze | COMPLETE; validado con evento MQTT en AWS de desarrollo | `streaming/infrastructure/serverless/iot/iot.yml`, `streaming/simulator/simulate_coffee_sensors.py`, `docs/acceptance-checklist.md` |
+| Bronze -> Glue Job 1 -> Silver | COMPLETE; validado localmente y en AWS de desarrollo | `batch/glue/job_bronze_to_silver.py`, `batch/tests/test_transformations.py`, `docs/acceptance-checklist.md` |
+| Silver -> Glue Job 2 -> Gold | COMPLETE; validado localmente y en AWS de desarrollo | `batch/glue/job_silver_to_gold.py`, `batch/tests/test_transformations.py`, `docs/acceptance-checklist.md` |
+| Step Functions histórico e IoT | COMPLETE en IaC; ejecución end-to-end histórica verificada en AWS de desarrollo | `batch/infrastructure/serverless/data-platform/resources.yml`, `docs/acceptance-checklist.md` |
+| Glue Data Catalog y Athena | COMPLETE en IaC; consulta histórica verificada en AWS de desarrollo | `batch/infrastructure/serverless/data-platform/resources.yml`, `docs/acceptance-checklist.md` |
 | QuickSight | DEFERRED TO FINAL SPRINT | No se añade dashboard de consumo en este sprint |
 
 ## Flujos

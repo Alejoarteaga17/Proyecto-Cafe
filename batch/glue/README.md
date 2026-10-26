@@ -60,14 +60,6 @@ configurados. Desde PowerShell:
 ./publish-scripts.ps1 -BucketName <data-lake-bucket> -Region us-east-1
 ```
 
-Para el entorno `dev` de este proyecto:
-
-```powershell
-./publish-scripts.ps1 `
-  -BucketName coffee-cultivation-coffee-data-lake-dev-aaccode `
-  -Region us-east-1
-```
-
 El publicador genera los dos scripts y `coffee-pipeline.zip`, que contiene el
 código compartido de `src/common` y `src/pipeline`.
 

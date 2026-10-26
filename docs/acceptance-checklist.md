@@ -28,7 +28,8 @@ end-to-end de Step Functions terminó correctamente y produjo:
 - `gold/historical/YEAR=2026/MM=8/...snappy.parquet`
 - Consulta Athena `SELECT count(*) FROM coffee_historical_gold`: `1`
 
-La suite local ejecutada durante esta revisión terminó con `50 passed` y una
-cobertura de líneas Python de `94%`, medida con `coverage` sobre `batch/src`,
-`batch/glue`, `streaming/streaming_src` y `streaming/simulator`. Se mantiene
-como complemento de la prueba de integración AWS.
+La suite local ejecutada en la revisión actual terminó con `70 passed`.
+La cobertura no se volvió a medir en esta revisión; cualquier porcentaje
+anterior debe tratarse como evidencia histórica y no como resultado de esta
+validación. La suite local se mantiene como complemento de la prueba de
+integración AWS.

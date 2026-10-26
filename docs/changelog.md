@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- End-to-end execution and acceptance evidence for the historical and IoT
+  ingestion paths, Glue transformations, Step Functions and Athena query.
+- Athena optimization comparison queries and a documented procedure for
+  measuring scanned bytes and execution time without inventing benchmark
+  results.
 - Coffee agronomic alert engine with validation for soil pH, humidity, temperature, relative humidity and NPK thresholds
 - Historical batch pipeline adapted to the coffee dataset: required 19-column validation, type/date checks and Gold-layer partitioning by YEAR/MM
 - IoT sensor contract and simulator aligned to MQTT-to-IoT Core-to-Data Firehose-to-S3 Bronze
@@ -16,6 +21,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Updated architecture and execution documentation to distinguish verified AWS
+  evidence from infrastructure defined only in IaC.
+- Documented the simulator `--publish` mode and removed account-specific bucket
+  examples from reusable deployment instructions.
 - Removed MongoDB, SQS, DLQ, SNS and Secrets Manager code, infrastructure,
   fixtures and dependencies from the repository.
 - Renamed the active infrastructure resources to a coffee-oriented naming convention and documented the deployment boundary

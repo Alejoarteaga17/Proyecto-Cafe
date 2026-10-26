@@ -6,7 +6,8 @@
 aprobada es API Gateway -> Lambda -> S3 Bronze -> Glue Job 1 -> Silver ->
 Glue Job 2 -> Gold.
 
-El pipeline está desplegado como varios stacks independientes bajo `serverless/` y usa su infraestructura propia dentro de `batch/infrastructure`.
+El pipeline se despliega como varios stacks independientes bajo `serverless/` y
+usa su infraestructura propia dentro de `batch/infrastructure`.
 
 ## Configuración
 
