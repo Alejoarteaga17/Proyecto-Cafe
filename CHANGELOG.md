@@ -28,6 +28,8 @@
   bisiestos, rangos de latitud/longitud y valores numéricos no finitos.
   Rechazos y duplicados quedan separados por `JOB_RUN_ID`, con métricas de
   calidad por ejecución. Se eliminó `collect()` del recorrido normal de filas.
+- Job 2 registra particiones Gold con valores string compatibles con Glue y
+  normaliza la ruta S3 para evitar dobles barras.
 - Silver ahora conserva una estrategia estable `YEAR/MM` y usa sobrescritura
   dinámica de particiones en Glue Job 1, evitando borrar años o meses que no
   forman parte de una nueva carga.

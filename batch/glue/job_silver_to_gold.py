@@ -50,12 +50,17 @@ def _register_partitions(args, summaries):
     partitions = []
     seen = set()
     for summary in summaries:
-        values = (str(summary['YEAR']), str(summary['MM']))
-        if values in seen:
+        values = [
+            str(summary['YEAR']),
+            str(summary['MM']),
+        ]
+        partition_key = tuple(values)
+        if partition_key in seen:
             continue
-        seen.add(values)
+        seen.add(partition_key)
         partitions.append({
-            'Values': list(values),
+            # Glue API requires partition values as strings, even for int keys.
+            'Values': values,
             'StorageDescriptor': {
                 'Columns': [
                     {'Name': 'Location', 'Type': 'string'},
@@ -68,7 +73,8 @@ def _register_partitions(args, summaries):
                     {'Name': 'avg_close_usd_60kg', 'Type': 'double'},
                 ],
                 'Location': (
-                    f"{args['output_path']}/YEAR={values[0]}/MM={values[1]}/"
+                    f"{args['output_path'].rstrip('/')}/"
+                    f"YEAR={values[0]}/MM={values[1]}/"
                 ),
                 'InputFormat': (
                     'org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat'

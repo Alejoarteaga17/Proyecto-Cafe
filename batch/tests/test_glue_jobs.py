@@ -254,6 +254,9 @@ def test_job_two_registers_unique_partitions(monkeypatch):
 
     assert len(client.request['PartitionInputList']) == 2
     assert client.request['PartitionInputList'][0]['Values'] == ['2026', '8']
+    assert client.request['PartitionInputList'][0]['StorageDescriptor'][
+        'Location'
+    ] == 's3://bucket/gold/YEAR=2026/MM=8/'
 
 
 def test_job_two_ignores_existing_partitions(monkeypatch):

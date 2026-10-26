@@ -3,19 +3,60 @@
 Esta carpeta contiene una interfaz mínima para arrastrar un CSV local hacia el
 endpoint de validación batch.
 
+## Requisitos
+
+- La API de carga histórica debe estar desplegada y disponible en API Gateway.
+- Debes tener la URL completa del endpoint `/coffee-historical-data`.
+- Debes tener una API Key válida de API Gateway. La página no genera ni
+  almacena la clave.
+- El navegador debe poder acceder al servidor local y la API debe aceptar
+  solicitudes CORS.
+
+La interfaz trae una URL de API como valor inicial para facilitar las pruebas,
+pero debes verificarla con `serverless info --stage dev` y reemplazarla si
+corresponde a otro stage, cuenta o despliegue. La API Key siempre debe
+introducirse manualmente.
+
 ## Cómo usarla
 
-1. Sirve la carpeta con un servidor local:
+### Opción recomendada: dentro del contenedor Docker
+
+Si estás trabajando dentro del contenedor `CoffeeCultivation`, desde `/app`
+ejecuta:
 
 ```bash
-python3 -m http.server 8080 --directory frontend
+python3 -m http.server 8080 --bind 0.0.0.0 --directory frontend
 ```
 
-2. Abre `http://localhost:8080`.
-3. Arrastra el CSV a la zona de carga o haz clic para seleccionarlo.
-4. Confirma la URL de API Gateway.
-5. Pega la API Key temporalmente en el campo correspondiente.
-6. Pulsa **Publicar CSV**.
+Como el Compose del proyecto no publica el puerto `8080` directamente,
+reenvíalo desde la pestaña **Ports** de VS Code y abre la URL que VS Code
+asigne. Si el puerto ya fue reenviado, también puedes abrir:
+
+```text
+http://localhost:8080
+```
+
+### Opción alternativa: desde la terminal del equipo
+
+Si el equipo tiene Python 3 instalado, no es necesario entrar al contenedor:
+
+```bash
+python3 -m http.server 8080 --bind 127.0.0.1 --directory frontend
+```
+
+En este caso, abre directamente `http://localhost:8080`.
+
+### Publicar el archivo
+
+1. Arrastra el CSV a la zona de carga o haz clic para seleccionarlo.
+2. Introduce la URL completa de API Gateway, incluyendo
+   `/coffee-historical-data`.
+3. Pega la API Key temporalmente en el campo correspondiente.
+4. Pulsa **Publicar CSV**.
+
+Una respuesta HTTP `202` significa que Lambda validó y guardó el CSV en S3
+Bronze. No significa que los datos ya estén en Silver o Gold; después debes
+iniciar `EtlStateMachine` desde Step Functions.
 
 ## Nota importante
 

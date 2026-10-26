@@ -64,6 +64,12 @@ Para el entorno `dev` de este proyecto:
 El publicador genera los dos scripts y `coffee-pipeline.zip`, que contiene el
 código compartido de `src/common` y `src/pipeline`.
 
+Después de cambiar un script Glue, es necesario volver a ejecutar el
+publicador. El job ejecuta la copia indicada por `ScriptLocation` en S3, no el
+archivo local del repositorio. Antes de reintentar una ejecución, verifica que
+el script publicado contenga el registro de particiones con valores string y
+una ruta sin doble barra.
+
 Si solo cambió un Job o el código compartido, vuelve a ejecutar este comando
 para actualizar los objetos bajo `s3://<data-lake-bucket>/glue/`; no es
 necesario redesplegar todos los stacks. Después inicia una nueva ejecución de
