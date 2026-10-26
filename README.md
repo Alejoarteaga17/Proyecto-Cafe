@@ -277,7 +277,7 @@ cd batch/glue
 
 La publicación actualiza `glue/job_bronze_to_silver.py`,
 `glue/job_silver_to_gold.py` y `glue/coffee-pipeline.zip` en S3. Después,
-ejecuta nuevamente `EtlStateMachine` desde Step Functions. La próxima
+ejecuta nuevamente `HistoricalEtlStateMachine` desde Step Functions. La próxima
 ejecución usará el código actualizado; no se necesita `serverless deploy`
 si no cambió la infraestructura.
 
@@ -292,7 +292,7 @@ serverless print --stage dev
 serverless deploy --stage dev
 ```
 
-Luego inicia una nueva ejecución de `EtlStateMachine` y verifica que termine en
+Luego inicia una nueva ejecución de `HistoricalEtlStateMachine` y verifica que termine en
 `Succeeded`. No ejecutes `serverless remove`: `deploy` actualiza el stack
 existente y conserva su nombre y recursos según el plan de CloudFormation.
 
@@ -430,7 +430,7 @@ necesario usar Postman.
    Archivos mayores requieren un flujo de carga por partes o directo a S3
    validado antes de Bronze; ese flujo no está implementado en este endpoint.
 
-3. Ejecuta la máquina `EtlStateMachine` desde Step Functions. La carga del CSV
+3. Ejecuta la máquina `HistoricalEtlStateMachine` desde Step Functions. La carga del CSV
    no la inicia automáticamente. En la consola de AWS:
 
    - Abre **Step Functions** en `us-east-1`.

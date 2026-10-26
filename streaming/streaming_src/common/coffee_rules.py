@@ -14,6 +14,7 @@ COFFEE_REQUIRED_FIELDS = (
     'Solar_Radiation',
     'Precipitation_mm',
     'soil_ph',
+    'soil_moisture',
     'nutrients_mg_kg',
 )
 
@@ -139,6 +140,8 @@ def validate_coffee_reading(record):
     soil_moisture = _as_float(record.get('soil_moisture'))
     if soil_moisture is None:
         soil_moisture = _as_float(record.get('soil_moisture_pct'))
+    if 'soil_moisture' not in record:
+        errors.append('"soil_moisture" cannot be empty')
     if soil_moisture is not None and not 0 <= soil_moisture <= 100:
         errors.append('"soil_moisture" must be between 0 and 100')
     for field_name in ('Solar_Radiation', 'Precipitation_mm'):
@@ -150,12 +153,17 @@ def validate_coffee_reading(record):
     if not isinstance(nutrients, dict):
         errors.append('"nutrients_mg_kg" must be an object with N, P and K')
     else:
-        for nutrient_name in ('N', 'P', 'K'):
-            if nutrient_name not in nutrients:
-                errors.append(f'"nutrients_mg_kg" is missing "{nutrient_name}"')
-            elif _as_float(nutrients.get(nutrient_name)) is None:
+        nutrient_values = {
+            str(name).lower(): value for name, value in nutrients.items()
+        }
+        for nutrient_name in ('n', 'p', 'k'):
+            if nutrient_name not in nutrient_values:
                 errors.append(
-                    f'"nutrients_mg_kg.{nutrient_name}" must be numeric'
+                    f'"nutrients_mg_kg" is missing "{nutrient_name.upper()}"'
+                )
+            elif _as_float(nutrient_values[nutrient_name]) is None:
+                errors.append(
+                    f'"nutrients_mg_kg.{nutrient_name.upper()}" must be numeric'
                 )
 
     return errors

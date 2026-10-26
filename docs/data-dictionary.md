@@ -41,12 +41,15 @@ y duplicados por `JOB_RUN_ID`, y publica un resumen de calidad por ejecución.
 | `Solar_Radiation` | double | según sensor | no negativo |
 | `Precipitation_mm` | double | mm | no negativo |
 | `soil_ph` | double | pH | numérico |
-| `soil_moisture` | double | porcentaje | 0-100 cuando se envía |
-| `nutrients_mg_kg` | object | mg/kg | contiene `N`, `P` y `K` numéricos |
+| `soil_moisture` | double | porcentaje | obligatorio; 0-100 |
+| `nutrients_mg_kg` | object | mg/kg | Bronze contiene `N`, `P`, `K`; Silver normaliza a `n`, `p`, `k` |
 
 La validación estructural del evento se realiza en el simulador antes de
 publicar. IoT Core deriva `sensor_id` de `sensors/coffee/<sensor-id>/data`
 mediante la regla; Firehose solo entrega el evento y no realiza análisis
-agronómico.
+agronómico. Glue Job IoT 1 conserva la primera lectura por
+`sensor_id + timestamp`, registra las posteriores como duplicados y escribe
+Silver particionado por `YEAR/MM`. Glue Job IoT 2 agrega por sensor, lote y
+mes en Gold Parquet.
 
 Los campos IoT (`sensor_id`, `location`, `timestamp`, `Temp_Max`, `Temp_Min`, `Humidity`, `Solar_Radiation`, `Precipitation_mm`, `soil_ph`, `soil_moisture`, `nutrients_mg_kg`) provienen del contrato existente en `streaming/streaming_src/common/coffee_rules.py`; sus umbrales agronómicos siguen siendo provisionales hasta ser confirmados por el requisito del proyecto.

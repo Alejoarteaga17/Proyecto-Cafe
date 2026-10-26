@@ -21,6 +21,13 @@
   against the IoT contract before emitting it.
 - IoT infrastructure now declares the simulator Thing and its SSM name
   parameter while preserving the direct IoT Core to Firehose to S3 path.
+- IoT simulator topics now use the selected sensor identifier, and generated
+  readings include mandatory soil moisture.
+- Added separated IoT Glue Bronze-to-Silver and Silver-to-Gold jobs, catalog
+  tables, and Step Functions state machine with `YEAR/MM` partitions.
+- IoT transformations normalize nutrient keys to `n/p/k`, retain the first
+  reading per `sensor_id + timestamp`, and preserve invalid and duplicate
+  diagnostics.
 
 ### Changed
 

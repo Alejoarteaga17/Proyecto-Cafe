@@ -31,16 +31,10 @@ Resources:
           - Effect: Allow
             Action: iot:Publish
             Resource:
-              !Join [
-                '',
-                [
-                  'arn:aws:iot:',
-                  !Ref AWS::Region,
-                  ':',
-                  !Ref AWS::AccountId,
-                  ':topic/sensors/coffee/${iot:Connection.Thing.ThingName}/data',
-                ],
-              ]
+              - !Sub arn:aws:iot:${AWS::Region}:${AWS::AccountId}:topic/sensors/coffee/ST-01/data
+              - !Sub arn:aws:iot:${AWS::Region}:${AWS::AccountId}:topic/sensors/coffee/ST-02/data
+              - !Sub arn:aws:iot:${AWS::Region}:${AWS::AccountId}:topic/sensors/coffee/ST-03/data
+              - !Sub arn:aws:iot:${AWS::Region}:${AWS::AccountId}:topic/sensors/coffee/ST-04/data
 
   SensorReadingsTopicRuleRole:
     Type: AWS::IAM::Role
@@ -69,11 +63,10 @@ Resources:
     Properties:
       RuleName: ${self:custom.iot.ruleName.${self:custom.stage}}
       TopicRulePayload:
-        # topic(3) is the sensor-id segment of sensors/coffee/<sensor-id>/data,
-        # which the SensorReadingsPolicy guarantees matches the connecting
-        # certificate's ThingName (iot:Publish is scoped to that topic). Added
-        # as the reading's sensor_id. The payload itself carries no such field,
-        # so there is nothing client-controlled to misreport.
+        # topic(3) is the sensor-id segment of sensors/coffee/<sensor-id>/data.
+        # The policy limits publication to the four simulator sensor topics.
+        # The payload itself carries no sensor_id, so the topic remains the
+        # authoritative source for the derived identity.
         Sql: "SELECT *, topic(3) AS sensor_id FROM 'sensors/coffee/+/data'"
         AwsIotSqlVersion: '2016-03-23'
         RuleDisabled: false

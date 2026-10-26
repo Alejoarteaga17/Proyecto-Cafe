@@ -56,7 +56,7 @@ En este caso, abre directamente `http://localhost:8080`.
 
 Una respuesta HTTP `202` significa que Lambda validó y guardó el CSV en S3
 Bronze. No significa que los datos ya estén en Silver o Gold; después debes
-iniciar `EtlStateMachine` desde Step Functions.
+iniciar `HistoricalEtlStateMachine` desde Step Functions.
 
 ## Nota importante
 

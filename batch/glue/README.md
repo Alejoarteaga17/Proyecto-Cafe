@@ -83,3 +83,8 @@ necesario redesplegar todos los stacks. Después inicia una nueva ejecución de
 Step Functions. Si cambió la definición de Glue, Step Functions, Data Catalog
 o Athena, publica primero los scripts y luego redespliega el stack
 `batch/infrastructure/serverless/data-platform`.
+
+El flujo histórico y el flujo IoT tienen state machines separadas. Publica
+también los scripts IoT desde `streaming/glue/publish-scripts.ps1` antes de
+ejecutar la state machine IoT. No se agrega un disparador automático en esta
+etapa: ambas ejecuciones se inician manualmente y de forma independiente.

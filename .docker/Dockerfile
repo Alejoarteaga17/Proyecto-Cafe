@@ -75,4 +75,5 @@ USER $USER
 FROM img-base AS img-root
 USER root
 RUN apt-get install -y graphviz
+RUN pip3 install boto3
 USER $USER

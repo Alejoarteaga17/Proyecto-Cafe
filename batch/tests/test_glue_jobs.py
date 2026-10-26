@@ -403,6 +403,9 @@ def test_job_two_main_writes_gold_and_commits(monkeypatch):
     assert registered == [(args, [
         {'YEAR': 2026, 'MM': 8, 'Location': 'Armenia', 'record_count': 1}
     ])]
+    assert spark.conf.values == {
+        'spark.sql.sources.partitionOverwriteMode': 'dynamic',
+    }
     assert spark.created[0][1].write.calls[-2:] == [
         ('partitionBy', ('YEAR', 'MM')),
         ('parquet', 's3://gold'),

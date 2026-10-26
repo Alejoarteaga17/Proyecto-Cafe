@@ -23,6 +23,8 @@ Resources:
                   - s3:PutObject
                   - s3:ListBucket
                   - s3:DeleteObject
+                  - glue:CreatePartition
+                  - glue:UpdatePartition
                   - glue:BatchCreatePartition
                 Resource:
                   - arn:aws:s3:::${self:custom.bucketName}
@@ -53,6 +55,8 @@ Resources:
                 Resource:
                   - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:job/${self:service}-bronze-to-silver-${sls:stage}
                   - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:job/${self:service}-silver-to-gold-${sls:stage}
+                  - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:job/${self:service}-iot-bronze-to-silver-${sls:stage}
+                  - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:job/${self:service}-iot-silver-to-gold-${sls:stage}
 
   GlueDatabase:
     Type: AWS::Glue::Database
@@ -105,6 +109,49 @@ Resources:
         '--catalog_database': !Ref GlueDatabase
         '--catalog_table': coffee_historical_gold
 
+  IotBronzeToSilverJob:
+    Type: AWS::Glue::Job
+    Properties:
+      Name: ${self:service}-iot-bronze-to-silver-${sls:stage}
+      Role: !GetAtt GlueJobRole.Arn
+      GlueVersion: '4.0'
+      WorkerType: G.1X
+      NumberOfWorkers: 2
+      Command:
+        Name: glueetl
+        PythonVersion: '3'
+        ScriptLocation: s3://${self:custom.glueScriptBucket}/glue/job_iot_bronze_to_silver.py
+      DefaultArguments:
+        '--job-language': python
+        '--extra-py-files': s3://${self:custom.glueScriptBucket}/glue/coffee-iot-pipeline.zip
+        '--input_path': s3://${self:custom.bucketName}/bronze/iot/
+        '--output_path': s3://${self:custom.bucketName}/silver/iot/
+        '--rejected_path': s3://${self:custom.bucketName}/silver/iot-rejected/
+        '--duplicate_path': s3://${self:custom.bucketName}/silver/iot-duplicates/
+        '--quality_path': s3://${self:custom.bucketName}/silver/iot-quality/
+        '--catalog_database': !Ref GlueDatabase
+        '--catalog_table': coffee_iot_silver
+
+  IotSilverToGoldJob:
+    Type: AWS::Glue::Job
+    Properties:
+      Name: ${self:service}-iot-silver-to-gold-${sls:stage}
+      Role: !GetAtt GlueJobRole.Arn
+      GlueVersion: '4.0'
+      WorkerType: G.1X
+      NumberOfWorkers: 2
+      Command:
+        Name: glueetl
+        PythonVersion: '3'
+        ScriptLocation: s3://${self:custom.glueScriptBucket}/glue/job_iot_silver_to_gold.py
+      DefaultArguments:
+        '--job-language': python
+        '--extra-py-files': s3://${self:custom.glueScriptBucket}/glue/coffee-iot-pipeline.zip
+        '--input_path': s3://${self:custom.bucketName}/silver/iot/
+        '--output_path': s3://${self:custom.bucketName}/gold/iot/
+        '--catalog_database': !Ref GlueDatabase
+        '--catalog_table': coffee_iot_gold
+
   GoldWorkGroup:
     Type: AWS::Athena::WorkGroup
     Properties:
@@ -116,7 +163,7 @@ Resources:
         EngineVersion:
           SelectedEngineVersion: Athena engine version 3
 
-  EtlStateMachine:
+  HistoricalEtlStateMachine:
     Type: AWS::StepFunctions::StateMachine
     Properties:
       RoleArn: !GetAtt StepFunctionsRole.Arn
@@ -146,6 +193,37 @@ Resources:
           }
         - BronzeJob: !Ref BronzeToSilverJob
           GoldJob: !Ref SilverToGoldJob
+
+  IotEtlStateMachine:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      RoleArn: !GetAtt StepFunctionsRole.Arn
+      DefinitionString: !Sub
+        - |-
+          {
+            "StartAt": "IotBronzeToSilver",
+            "States": {
+              "IotBronzeToSilver": {
+                "Type": "Task",
+                "Resource": "arn:aws:states:::glue:startJobRun.sync",
+                "Parameters": {"JobName": "${IotBronzeJob}"},
+                "Retry": [{"ErrorEquals": ["States.ALL"], "MaxAttempts": 2, "BackoffRate": 2, "IntervalSeconds": 30}],
+                "Next": "IotSilverToGold",
+                "Catch": [{"ErrorEquals": ["States.ALL"], "Next": "Failed"}]
+              },
+              "IotSilverToGold": {
+                "Type": "Task",
+                "Resource": "arn:aws:states:::glue:startJobRun.sync",
+                "Parameters": {"JobName": "${IotGoldJob}"},
+                "Retry": [{"ErrorEquals": ["States.ALL"], "MaxAttempts": 2, "BackoffRate": 2, "IntervalSeconds": 30}],
+                "End": true,
+                "Catch": [{"ErrorEquals": ["States.ALL"], "Next": "Failed"}]
+              },
+              "Failed": {"Type": "Fail", "Error": "IotEtlFailed"}
+            }
+          }
+        - IotBronzeJob: !Ref IotBronzeToSilverJob
+          IotGoldJob: !Ref IotSilverToGoldJob
 
   HistoricalGoldTable:
     Type: AWS::Glue::Table
@@ -280,12 +358,83 @@ Resources:
             - {Name: Precipitation_mm, Type: double}
             - {Name: soil_ph, Type: double}
             - {Name: soil_moisture, Type: double}
-            - {Name: nutrients_mg_kg, Type: struct<n:double,p:double,k:double>}
+            - {Name: nutrients_mg_kg, Type: struct<N:double,P:double,K:double>}
+
+  IotSilverTable:
+    Type: AWS::Glue::Table
+    Properties:
+      CatalogId: !Ref AWS::AccountId
+      DatabaseName: !Ref GlueDatabase
+      TableInput:
+        Name: coffee_iot_silver
+        TableType: EXTERNAL_TABLE
+        Parameters:
+          classification: json
+        PartitionKeys:
+          - {Name: YEAR, Type: int}
+          - {Name: MM, Type: int}
+        StorageDescriptor:
+          Location: s3://${self:custom.bucketName}/silver/iot/
+          InputFormat: org.apache.hadoop.mapred.TextInputFormat
+          OutputFormat: org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat
+          SerdeInfo:
+            SerializationLibrary: org.openx.data.jsonserde.JsonSerDe
+          Columns:
+            - {Name: sensor_id, Type: string}
+            - {Name: location, Type: string}
+            - {Name: timestamp, Type: string}
+            - {Name: Temp_Max, Type: double}
+            - {Name: Temp_Min, Type: double}
+            - {Name: Humidity, Type: double}
+            - {Name: Solar_Radiation, Type: double}
+            - {Name: Precipitation_mm, Type: double}
+            - {Name: soil_ph, Type: double}
+            - {Name: soil_moisture, Type: double}
+            - {Name: n, Type: double}
+            - {Name: p, Type: double}
+            - {Name: k, Type: double}
+
+  IotGoldTable:
+    Type: AWS::Glue::Table
+    Properties:
+      CatalogId: !Ref AWS::AccountId
+      DatabaseName: !Ref GlueDatabase
+      TableInput:
+        Name: coffee_iot_gold
+        TableType: EXTERNAL_TABLE
+        Parameters:
+          classification: parquet
+        PartitionKeys:
+          - {Name: YEAR, Type: int}
+          - {Name: MM, Type: int}
+        StorageDescriptor:
+          Location: s3://${self:custom.bucketName}/gold/iot/
+          InputFormat: org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat
+          OutputFormat: org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat
+          SerdeInfo:
+            SerializationLibrary: org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe
+          Columns:
+            - {Name: sensor_id, Type: string}
+            - {Name: location, Type: string}
+            - {Name: record_count, Type: bigint}
+            - {Name: avg_temp_max, Type: double}
+            - {Name: avg_temp_min, Type: double}
+            - {Name: avg_humidity, Type: double}
+            - {Name: avg_solar_radiation, Type: double}
+            - {Name: total_precipitation_mm, Type: double}
+            - {Name: avg_soil_ph, Type: double}
+            - {Name: avg_soil_moisture, Type: double}
+            - {Name: avg_n, Type: double}
+            - {Name: avg_p, Type: double}
+            - {Name: avg_k, Type: double}
 
 Outputs:
-  StateMachineArn:
+  HistoricalStateMachineArn:
     Description: ETL Step Functions state machine ARN
-    Value: !Ref EtlStateMachine
+    Value: !Ref HistoricalEtlStateMachine
+  IotStateMachineArn:
+    Description: IoT ETL Step Functions state machine ARN
+    Value: !Ref IotEtlStateMachine
   GlueDatabaseName:
     Description: Glue Data Catalog database
     Value: !Ref GlueDatabase

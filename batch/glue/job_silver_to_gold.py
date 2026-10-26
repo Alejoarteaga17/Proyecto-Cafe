@@ -35,14 +35,21 @@ def main():
         )
         .drop('_source_path')
     )
-    summaries = silver_to_gold([
-        row.asDict(recursive=True) for row in frame.collect()
-    ])
+    summaries = silver_to_gold(_iter_rows(frame))
     if summaries:
+        glue_context.spark_session.conf.set(
+            'spark.sql.sources.partitionOverwriteMode', 'dynamic')
         glue_context.spark_session.createDataFrame(summaries).write.mode(
             'overwrite').partitionBy('YEAR', 'MM').parquet(args['output_path'])
         _register_partitions(args, summaries)
     job.commit()
+
+
+def _iter_rows(frame):
+    iterator = getattr(frame, 'toLocalIterator', None)
+    if iterator is not None:
+        return (row.asDict(recursive=True) for row in iterator())
+    return (row.asDict(recursive=True) for row in frame.collect())
 
 
 def _register_partitions(args, summaries):

@@ -32,6 +32,42 @@ python3 simulator/simulate_coffee_sensors.py \
   --count 3 --seed 7 --interval 0
 ```
 
+Por defecto, el simulador solo imprime los eventos. Para publicarlos
+automáticamente en AWS IoT Core, usa `--publish`:
+
+```bash
+python3 simulator/simulate_coffee_sensors.py \
+  --publish --count 3 --seed 7 --interval 2
+```
+
+Para dejarlo ejecutándose temporalmente, omite `--count` y detenlo con
+`Ctrl+C`:
+
+```bash
+python3 simulator/simulate_coffee_sensors.py --publish --interval 5
+```
+
+El topic predeterminado usa el sensor seleccionado, por ejemplo:
+
+```text
+sensors/coffee/ST-01/data
+```
+
+Puedes cambiar el Thing y el topic explícitamente:
+
+```bash
+python3 simulator/simulate_coffee_sensors.py \
+  --publish \
+  --thing-name coffee-cultivation-iot-sensor-simulator \
+  --topic 'sensors/coffee/{sensor_id}/data' \
+  --count 1
+```
+
+El modo `--publish` usa las credenciales AWS del contenedor y descubre
+automáticamente el endpoint IoT Data ATS. La identidad IAM usada debe tener
+permiso `iot:DescribeEndpoint` y `iot:Publish` para el topic. No es necesario
+copiar manualmente el JSON en el MQTT test client.
+
 ## Despliegue y validación
 
 El bucket debe existir previamente desde
@@ -44,9 +80,16 @@ serverless deploy --stage dev
 
 El despliegue requiere autorización explícita y credenciales AWS configuradas.
 
-El simulador valida cada evento antes de imprimirlo. El `sensor_id` se obtiene
-del topic MQTT `sensors/coffee/<sensor-id>/data` mediante la regla IoT y no se
-incluye en el payload controlado por el cliente.
+El simulador valida cada evento antes de imprimirlo. Cada lectura se publica
+en `sensors/coffee/<sensor-id>/data`; el `sensor_id` se obtiene de ese topic
+mediante la regla IoT y no se incluye en el payload controlado por el cliente.
+El procesamiento IoT se ejecuta manualmente desde su state machine separada:
+IoT Glue Job 1 valida, deduplica por `sensor_id + timestamp` y escribe Silver
+`YEAR/MM`; IoT Glue Job 2 escribe Gold Parquet agregado.
+
+Para publicar respetando el sensor seleccionado, el simulador usa por defecto
+el topic `sensors/coffee/<sensor-id>/data`. Si se usa `--topic`, debe ser una
+plantilla que contenga `{sensor_id}`.
 
 ## Pruebas
 
