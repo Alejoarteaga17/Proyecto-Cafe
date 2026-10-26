@@ -115,6 +115,7 @@ def _gold_columns():
 def _arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument('--JOB_NAME', required=True)
+    parser.add_argument('--JOB_ID')
     parser.add_argument('--JOB_RUN_ID')
     parser.add_argument('--input_path', required=True)
     parser.add_argument('--output_path', required=True)
