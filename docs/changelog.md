@@ -10,14 +10,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Coffee agronomic alert engine with validation for soil pH, humidity, temperature, relative humidity and NPK thresholds
-- Historical batch pipeline adapted to the coffee dataset: required 19-column validation, imputación for missing sensor values and Gold-layer partitioning by YEAR/MM/Location
-- Streaming pipeline for coffee sensors with MQTT-to-SQS-to-Lambda validation before MongoDB persistence
+- Historical batch pipeline adapted to the coffee dataset: required 19-column validation, type/date checks and Gold-layer partitioning by YEAR/MM
+- IoT sensor contract and simulator aligned to MQTT-to-IoT Core-to-Data Firehose-to-S3 Bronze
 - Support for S3 medallion storage with Silver and Gold layers aligned to the coffee data model
 
 ### Changed
 
-- Removed the legacy RDS/PostgreSQL path from the active architecture because MongoDB Atlas and S3 are the active sources of truth in this project
-- Renamed the active infrastructure resources to a coffee-oriented naming convention and kept the DLQ/SNS/CloudWatch alerting pattern intact
+- Removed MongoDB, SQS, DLQ, SNS and Secrets Manager code, infrastructure,
+  fixtures and dependencies from the repository.
+- Renamed the active infrastructure resources to a coffee-oriented naming convention and documented the deployment boundary
 
 ## [0.0.2] - 29/08/2026
 
@@ -32,6 +33,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Dockerized development environment for the backend and infrastructure subprojects
-- Shared AWS infrastructure for storage, queues, secrets, IoT routing and CloudWatch/SNS alerts
-- Serverless Lambda code for the coffee batch and streaming flows, using MongoDB Atlas as the operational persistence layer
+- Shared AWS infrastructure for S3 storage, IoT routing, Glue, Step Functions, Data Catalog and Athena
+- Serverless Lambda code for historical CSV validation and S3 Bronze ingestion
 - Architecture diagrams for the active coffee pipelines in the docs folder

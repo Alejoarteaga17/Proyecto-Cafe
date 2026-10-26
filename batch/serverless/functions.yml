@@ -6,11 +6,27 @@ GenerateUploadUrl:
   memorySize: 128
   package:
     patterns:
-      - ../../src/generate_upload_url/**
+    - ../src/common/**
+    - ../src/validate_and_store/**
   environment:
-    DATA_LAKE_BUCKET_NAME: ${self:custom.s3.dataLakeBucket.name}
+    BRONZE_BUCKET_NAME: ${self:custom.s3.dataLakeBucket.name}
   events:
     - http:
         path: /coffee-historical-data/upload-url
         method: post
         private: true
+        cors: true
+
+Cors:
+  name: ${self:custom.servicePrefix}-Cors
+  handler: src/validate_and_store/cors_handler.handler
+  timeout: 5
+  memorySize: 128
+  package:
+    patterns:
+    - ../src/validate_and_store/**
+  events:
+    - http:
+        path: /coffee-historical-data
+        method: options
+        private: false

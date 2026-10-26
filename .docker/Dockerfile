@@ -21,7 +21,7 @@ RUN apt-get install -y locales \
 RUN apt-get install -y sudo lsb-release git curl zip unzip jq libsqlite3-0
 
 # Install VSCode extensions dependencies
-RUN pip3 install pylint yapf isort cfn-lint cfn-lint-serverless
+RUN pip3 install pylint yapf isort pytest cfn-lint cfn-lint-serverless
 RUN npm install -g @anthropic-ai/claude-code
 
 # Install CLI utilities
@@ -35,14 +35,15 @@ RUN case "$(dpkg --print-architecture)" in \
     && ./aws/install \
     && apt-get install -y less
 
-# Install Serverless framework + plugins
+# Install Serverless Framework.
 RUN npm install -g serverless
 
 # Set up non root user
 RUN echo "$USER ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
 RUN useradd -ms $SHELL $USER
 RUN mkdir -p $VOLUME \
-    && chown -R $USER:$USER $VOLUME
+    && chown -R $USER:$USER $VOLUME \
+    && chown -R $USER:$USER /usr/local/lib/node_modules/serverless
 
 # cfn-lint: ignore W3005 (redundant DependsOn already implied by GetAtt)
 RUN echo "ignore_checks:" > "$USER_HOME/.cfnlintrc" \
@@ -68,14 +69,10 @@ USER $USER
 FROM img-base AS img-backend
 USER root
 RUN pip3 install boto3
-RUN pip3 install Faker
-RUN pip3 install mongodb-migrations
-RUN apt-get install -y mosquitto-clients
 USER $USER
 
 ######## ROOT IMAGE (monorepo-level tooling, e.g. architecture diagrams) ########
 FROM img-base AS img-root
 USER root
 RUN apt-get install -y graphviz
-RUN pip3 install diagrams
 USER $USER

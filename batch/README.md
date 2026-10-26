@@ -2,38 +2,11 @@
 
 ## Resumen
 
-`batch` contiene el pipeline de ingestión histórica del proyecto de café: carga mediante API, transformación con AWS Glue, particionado y almacenamiento analítico en el data lake S3.
+`batch` contiene el pipeline histórico completo del data lake. La ruta
+aprobada es API Gateway -> Lambda -> S3 Bronze -> Glue Job 1 -> Silver ->
+Glue Job 2 -> Gold.
 
-La IaC está separada en stacks bajo `serverless/` e `infrastructure/serverless/`.
-Actualmente están implementados el stack de almacenamiento S3 y el servicio de
-carga de URL prefirmada. Los scripts Glue existen, pero sus Jobs, catálogo y
-orquestación aún deben provisionarse antes de declarar completo el pipeline.
-
-## Arquitectura del pipeline
-
-```text
-Cliente -> API Gateway -> Lambda de carga -> URL prefirmada -> S3 Bronze
-                                                        |
-                                           Step Functions + Glue
-                                                        |
-                                              S3 Silver -> S3 Gold
-                                                        |
-                                      Glue Data Catalog -> Athena
-```
-
-La API entrega una URL prefirmada de corta duración. La aplicación cliente sube el archivo directamente a S3 usando `PUT`, por lo que el archivo no atraviesa los límites de payload de API Gateway ni la memoria de la Lambda. La URL no restringe el formato por sí misma; el pipeline histórico acepta inicialmente CSV y valida la extensión y el `Content-Type` declarado. JSON, JSONL o Parquet pueden agregarse después mediante lectores específicos en los Glue Jobs.
-
-La estructura propuesta es:
-
-```text
-bronze/historical/YYYY/MM/DD/<uuid>.csv
-silver/historical/year=YYYY/month=MM/location=<location>/
-gold/historical/
-```
-
-Silver se particiona por año, mes y ubicación porque son dimensiones de consulta frecuentes y de cardinalidad controlada: Athena puede leer solo los meses y fincas solicitados, reduciendo lecturas y costo. Gold no se particiona inicialmente porque sus agregados serán mucho más pequeños; se revisará con datos reales antes de añadir particiones.
-
-MongoDB no forma parte del pipeline batch nuevo. S3 conserva las capas Bronze, Silver y Gold; el mismo data lake puede recibir posteriormente los eventos del flujo streaming bajo sus propios prefijos.
+El pipeline está desplegado como varios stacks independientes bajo `serverless/` y usa su infraestructura propia dentro de `batch/infrastructure`.
 
 ## Configuración
 
@@ -48,7 +21,7 @@ Crea los archivos en `.envs` con los valores requeridos por AWS, Serverless y el
 
 ### Dependencias
 
-El despliegue requiere AWS CLI, Serverless Framework v4 y un perfil AWS con permisos para CloudFormation, S3, Lambda, API Gateway, Step Functions, Glue, Athena, IAM y CloudWatch Logs. Las credenciales se configuran fuera del repositorio; no deben copiarse al código.
+El usuario de Serverless debe tener permisos IAM adecuados en la cuenta de AWS y sus credenciales deben configurarse desde `.envs/aws.env`.
 
 ### Despliegue
 
@@ -57,73 +30,49 @@ Se usa Serverless Framework y cada stack vive dentro de `serverless/` y `infrast
 Orden recomendado:
 
 1. `infrastructure/serverless/storage`
-2. `serverless`
-3. Jobs Glue y sus scripts publicados en S3
-4. Step Functions y evento de entrada
-5. Glue Data Catalog
-6. Athena
+2. Publica los scripts Glue con `glue/publish-scripts.ps1 -BucketName <bucket>`.
+3. `infrastructure/serverless/data-platform`
+4. `serverless`
 
-Para validar solo lo implementado actualmente, ejecuta los pasos 1 y 2 y
-comprueba que el CSV aparezca en `bronze/uploads/`.
+Valida primero con `serverless print --stage dev` y despliega solo con autorización explícita.
 
-### Despliegue en PowerShell
-
-Usa un perfil de AWS IAM Identity Center ya configurado y no guardes
-credenciales en el repositorio:
-
-```powershell
-$env:AWS_PROFILE = "coffee-dev"
-$env:AWS_DEFAULT_REGION = "us-east-1"
-$env:DEPLOY_APP = "coffee-cultivation"
-$env:DEVELOPER = "alejandra-suarez"
-
-aws sso login --profile coffee-dev
-aws sts get-caller-identity --profile coffee-dev
-```
-
-Empaqueta y despliega el almacenamiento:
-
-```powershell
-cd batch/infrastructure/serverless/storage
-npx.cmd serverless package --stage dev --aws-profile coffee-dev
-npx.cmd serverless deploy --stage dev --aws-profile coffee-dev
-```
-
-Obtén el bucket y despliega la API:
-
-```powershell
-$bucket = aws ssm get-parameter `
-  --name "/coffee-cultivation-storage/RawReportsBucketName" `
-  --query "Parameter.Value" --output text
-
-cd ../../../serverless
-npx.cmd serverless package --stage dev --aws-profile coffee-dev
-npx.cmd serverless deploy --stage dev --aws-profile coffee-dev
-npx.cmd serverless info --stage dev --aws-profile coffee-dev
-```
-
-Solicita una URL prefirmada al endpoint mostrado por `serverless info` y sube
-el CSV con `PUT` y `Content-Type: text/csv`. Después comprueba Bronze:
-
-```powershell
-aws s3 ls "s3://$bucket/bronze/uploads/" --recursive
-```
-
-La ejecución completa no puede declararse validada hasta que existan recursos
-`AWS::Glue::Job`, `AWS::StepFunctions::StateMachine`,
-`AWS::Events::Rule`, `AWS::Glue::Database` y `AWS::Athena::WorkGroup` en la
-plantilla empaquetada. Compruébalo antes de desplegar la siguiente fase:
-
-```powershell
-Get-Content .serverless/cloudformation-template-update-stack.json |
-  Select-String "AWS::Glue|AWS::StepFunctions|AWS::Events|AWS::Athena"
-```
+Los componentes excluidos de la arquitectura anterior fueron eliminados y no
+deben reintroducirse.
 
 ### Eliminación
 
 Usa `serverless remove` en el orden inverso al despliegue para evitar dependencias de infraestructura.
 
 ---
+
+## Contrato operativo
+
+- La API recibe JSON con `file`, cuyo valor es el CSV codificado en Base64.
+- El archivo debe ser UTF-8, contener exactamente las 19 columnas requeridas y
+  no superar 5 MiB ni 300 filas.
+- El límite de 5 MiB es intencional: el archivo viaja completo dentro de una
+  invocación síncrona de API Gateway/Lambda, con expansión adicional por
+  Base64. No se debe elevar sin cambiar el contrato de transporte.
+- Lambda valida estructura, tipos, fechas, rangos y consistencia antes de
+  escribir en `bronze/historical/`.
+- Glue Job 1 conserva filas rechazadas y duplicadas en `silver/rejected/` y
+  `silver/duplicates/`, separadas por `run_id`, y escribe filas válidas
+  particionadas por `YEAR/MM`. También publica métricas de calidad por
+  ejecución en `silver/quality/`.
+- Glue Job 2 lee Silver JSON y escribe Gold Parquet particionado por `YEAR/MM`.
+- Step Functions ejecuta Job 2 únicamente después del éxito de Job 1.
+
+## Validación local del batch
+
+```bash
+cd batch
+python3 -m pytest -q
+python3 -m compileall -q src glue tests
+```
+
+La validación local no confirma recursos desplegados en AWS. La validación de
+infraestructura requiere `serverless print --stage dev` y `cfn-lint` dentro del
+contenedor.
 
 ## Glosario
 

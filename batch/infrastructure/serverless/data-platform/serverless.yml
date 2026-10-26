@@ -1,0 +1,16 @@
+service: data-platform
+frameworkVersion: '^4.6.2'
+configValidationMode: error
+
+provider:
+  name: aws
+  region: us-east-1
+  stage: ${opt:stage, 'dev'}
+
+resources:
+  - ${file(resources.yml)}
+
+custom:
+  bucketName: ${ssm:/${env:DEPLOY_APP, 'coffee-cultivation'}-storage/DataLakeBucketName}
+  databaseName: ${env:GLUE_DATABASE_NAME, 'coffee_cultivation'}
+  glueScriptBucket: ${self:custom.bucketName}

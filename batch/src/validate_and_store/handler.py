@@ -6,7 +6,12 @@ import json
 import os
 import uuid
 
-import boto3
+from src.common.coffee_batch_validator import BatchValidationError, validate_rows
+
+try:
+    import boto3
+except ModuleNotFoundError:  # Local tests can inject an S3 client stub.
+    boto3 = None
 
 REQUIRED_COLUMNS = [
     'LON',
@@ -30,22 +35,15 @@ REQUIRED_COLUMNS = [
     'mxn',
 ]
 
-DEFAULT_IMPUTATIONS = {
-    'Temp_Max': 22.0,
-    'Temp_Min': 18.0,
-    'Humidity': 70.0,
-    'Solar_Radiation': 450.0,
-    'Precipitation_mm': 0.0,
-    'Close_USD_60kg': 0.0,
-    'brl': 1.0,
-    'cny': 1.0,
-    'mxn': 1.0,
-}
+class _UnavailableS3Client:
+    def put_object(self, **kwargs):
+        raise RuntimeError('boto3 is required to upload to S3')
 
-s3_client = boto3.client('s3')
 
-RAW_REPORTS_BUCKET_NAME = os.environ.get('RAW_REPORTS_BUCKET_NAME') or os.environ.get(
-    'SILVER_BUCKET_NAME') or 'coffee-data-lake-silver'
+s3_client = boto3.client('s3') if boto3 else _UnavailableS3Client()
+
+BRONZE_BUCKET_NAME = os.environ.get('BRONZE_BUCKET_NAME', 'coffee-data-lake-bronze')
+MAX_FILE_BYTES = 5 * 1024 * 1024
 
 
 def handler(event, context):
@@ -68,6 +66,10 @@ def handler(event, context):
         return _response(400, {
             'message': '"file" is not valid base64'
         })
+    if not file_bytes or len(file_bytes) > MAX_FILE_BYTES:
+        return _response(413, {
+            'message': 'CSV file must be non-empty and no larger than 5 MiB'
+        })
 
     try:
         text = file_bytes.decode('utf-8-sig')
@@ -78,9 +80,9 @@ def handler(event, context):
             'errors': [str(error)],
         })
 
-    report_key = f'silver/uploads/{uuid.uuid4()}.csv'
+    report_key = f'bronze/historical/ingested_at={uuid.uuid4()}/{uuid.uuid4()}.csv'
     s3_client.put_object(
-        Bucket=RAW_REPORTS_BUCKET_NAME,
+        Bucket=BRONZE_BUCKET_NAME,
         Key=report_key,
         Body=text.encode('utf-8'),
         ContentType='text/csv',
@@ -100,33 +102,42 @@ def _parse_csv_rows(csv_text):
         raise ValueError('CSV file is missing a header row')
 
     fieldnames = [str(name).strip() for name in reader.fieldnames]
+    if len(fieldnames) != len(set(fieldnames)):
+        raise ValueError('CSV header contains duplicate columns')
+    reader.fieldnames = fieldnames
     missing = [column for column in REQUIRED_COLUMNS if column not in fieldnames]
     if missing:
         raise ValueError(f'Missing required column(s): {", ".join(missing)}')
+    unexpected = [
+        column for column in fieldnames if column not in REQUIRED_COLUMNS
+    ]
+    if unexpected:
+        raise ValueError(
+            f'CSV contains unexpected column(s): {", ".join(unexpected)}'
+        )
 
     cleaned_rows = []
     for row_number, row in enumerate(reader, start=2):
-        cleaned_row = {}
-        for column in REQUIRED_COLUMNS:
-            value = row.get(column)
-            if value is None or (isinstance(value, str) and not value.strip()):
-                cleaned_row[column] = DEFAULT_IMPUTATIONS.get(column, 0)
-            else:
-                cleaned_row[column] = value.strip()
-        if cleaned_row['Location'] == 'nan':
-            cleaned_row['Location'] = 'Unknown_Location'
-        cleaned_rows.append(cleaned_row)
-
-    if not cleaned_rows:
-        raise ValueError('CSV file has no data rows')
-    return cleaned_rows
+        if None in row and any(value not in (None, '') for value in row[None]):
+            raise ValueError(f'Row {row_number} contains unexpected columns')
+        cleaned_rows.append({
+            column: (row.get(column) or '').strip()
+            for column in REQUIRED_COLUMNS
+        })
+    try:
+        return validate_rows(cleaned_rows)
+    except BatchValidationError as error:
+        raise ValueError(str(error)) from error
 
 
 def _response(status_code, body):
     return {
         'statusCode': status_code,
         'headers': {
-            'Content-Type': 'application/json'
+            'Access-Control-Allow-Headers': 'Content-Type,X-Api-Key',
+            'Access-Control-Allow-Methods': 'OPTIONS,POST',
+            'Access-Control-Allow-Origin': '*',
+            'Content-Type': 'application/json',
         },
         'body': json.dumps(body),
     }

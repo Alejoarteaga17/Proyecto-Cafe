@@ -1,8 +1,8 @@
 Resources:
-  RawReportsBucket:
+  DataLakeBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: ${self:custom.rawReportsBucket.name.${self:custom.stage}}
+      BucketName: ${self:custom.dataLakeBucket.name.${self:custom.stage}}
       VersioningConfiguration:
         Status: Enabled
       BucketEncryption:
@@ -14,13 +14,17 @@ Resources:
         BlockPublicPolicy: true
         IgnorePublicAcls: true
         RestrictPublicBuckets: true
-      LifecycleConfiguration:
-        Rules:
-          - Id: AbortIncompleteMultipartUploads
-            Status: Enabled
-            AbortIncompleteMultipartUpload:
-              DaysAfterInitiation: 7
-          - Id: ExpireFailedUploads
-            Prefix: bronze/failed/
-            Status: Enabled
-            ExpirationInDays: 30
+
+  DataLakeBucketName:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub /${AWS::StackName}/DataLakeBucketName
+      Type: String
+      Value: !Ref DataLakeBucket
+
+  DataLakeBucketArn:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub /${AWS::StackName}/DataLakeBucketArn
+      Type: String
+      Value: !GetAtt DataLakeBucket.Arn

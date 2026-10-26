@@ -7,9 +7,8 @@ provider:
   stage: dev
   region: us-east-1
   runtime: python3.13
+  architecture: arm64
   stackName: ${env:DEPLOY_APP, 'coffee-cultivation'}-${self:service}
-  deploymentBucket:
-    name: ${self:custom.s3.deploymentBucketName.${self:custom.stage}}
   apiGateway:
     apiKeys:
       - ${self:custom.servicePrefix}-key
@@ -21,35 +20,11 @@ package:
 
 resources:
   - ${file(iam.yml)}
-  - ${file(parameters.yml)}
 
 functions: ${file(functions.yml)}
 
-plugins:
-  - serverless-deployment-bucket
-  - '@serverless/safeguards-plugin'
-
 custom:
   stage: ${opt:stage, self:provider.stage}
-  safeguards:
-    - safeguard: framework-version
-      enforcementLevel: warning
-      config: ${self:frameworkVersion}
-    - safeguard: allowed-regions
-      enforcementLevel: error
-      config:
-        - ${self:provider.region}
-    - safeguard: allowed-function-names
-      enforcementLevel: warning
-      config: ${self:custom.servicePrefix}-${FUNCTION}
-    - safeguard: no-wild-iam-role-statements
-      enforcementLevel: warning
-    - safeguard: allowed-stages
-      enforcementLevel: error
-      config:
-        - dev
-        - test
-        - prod
   servicePrefix: ${env:DEPLOY_APP, 'coffee-cultivation'}-${self:service}
   developer: ${env:DEVELOPER, 'aaccode'}
   s3:
@@ -58,5 +33,5 @@ custom:
       test: ${self:provider.region}-cfn-${self:service}-${self:custom.stage}-deploys
       prod: ${self:provider.region}-cfn-${self:service}-${self:custom.stage}-deploys
     dataLakeBucket:
-      name: ${ssm:/${env:DEPLOY_APP, 'coffee-cultivation'}-storage/RawReportsBucketName}
-      arn: ${ssm:/${env:DEPLOY_APP, 'coffee-cultivation'}-storage/RawReportsBucketArn}
+      name: ${ssm:/${env:DEPLOY_APP, 'coffee-cultivation'}-storage/DataLakeBucketName}
+      arn: ${ssm:/${env:DEPLOY_APP, 'coffee-cultivation'}-storage/DataLakeBucketArn}

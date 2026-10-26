@@ -1,25 +1,40 @@
-# Frontend de prueba para carga de CSV
+# Frontend de prueba para publicar un CSV
 
-Esta carpeta contiene una mini interfaz para enviar un archivo CSV al endpoint de validación batch del backend.
+Esta carpeta contiene una interfaz mínima para arrastrar un CSV local hacia el
+endpoint de validación batch.
 
 ## Cómo usarla
 
-1. Abre el archivo `frontend/index.html` directamente en el navegador o sirve la carpeta con un pequeño servidor local.
-2. Reemplaza estas dos constantes con tus valores reales:
+1. Sirve la carpeta con un servidor local:
 
-```js
-const API_URL = 'https://<api-id>.execute-api.us-east-1.amazonaws.com/dev/coffee-historical-data';
-const API_KEY = 'COLOCA_AQUI_LA_API_KEY_GENERADA_POR_EL_BACKEND';
+```bash
+python3 -m http.server 8080 --directory frontend
 ```
 
-3. Selecciona un CSV y pulsa **Enviar al backend**.
+2. Abre `http://localhost:8080`.
+3. Arrastra el CSV a la zona de carga o haz clic para seleccionarlo.
+4. Confirma la URL de API Gateway.
+5. Pega la API Key temporalmente en el campo correspondiente.
+6. Pulsa **Publicar CSV**.
 
 ## Nota importante
 
-La lógica del frontend convierte el CSV a base64 antes del `POST`, igual que el backend espera recibir el campo `file`.
+El frontend lee el archivo local como bytes, lo convierte a Base64 y envía un
+`POST` con el campo `file`, que es el formato esperado por Lambda.
+El endpoint actual acepta archivos de hasta 5 MiB y la validación del backend
+también limita el dataset a 300 filas. El frontend rechaza archivos mayores
+antes de convertirlos a Base64 para evitar una solicitud que exceda los límites
+de transporte de API Gateway/Lambda y termine mostrando un error genérico del
+navegador.
 
-La página solo sirve para pruebas rápidas y no reemplaza ni modifica la arquitectura del backend ni la infraestructura AWS del proyecto.
+Para archivos mayores, no basta con aumentar la constante del backend: habría
+que implementar un flujo de carga por partes o una carga directa controlada a
+S3 y mantener la validación antes de promover el archivo a Bronze. Ese cambio
+no forma parte del endpoint actual.
 
-## Consumo de MongoDB
+La página solo sirve para pruebas rápidas y no reemplaza ni modifica la
+arquitectura del backend ni la infraestructura AWS del proyecto.
 
-Para empezar a visualizar datos guardados en MongoDB, la mejor práctica es crear primero un endpoint del backend que consulte MongoDB y devuelva JSON al frontend. Esto evita exponer credenciales en el navegador y mantiene la arquitectura segura.
+## Alcance
+
+La interfaz solo prueba la carga histórica hacia API Gateway. El consumo analítico mediante Athena y QuickSight está reservado para el sprint final; no se conecta a MongoDB ni expone credenciales.

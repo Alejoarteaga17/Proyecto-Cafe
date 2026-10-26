@@ -19,4 +19,4 @@ Resources:
             Statement:
               - Effect: Allow
                 Action: s3:PutObject
-                Resource: ${self:custom.s3.dataLakeBucket.arn}/bronze/uploads/*
+                Resource: ${self:custom.s3.dataLakeBucket.arn}/bronze/historical/*

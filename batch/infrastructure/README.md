@@ -2,24 +2,14 @@
 
 ## Resumen
 
-`infrastructure` contiene stacks compartidos de AWS del proyecto de café:
-data lake S3, colas SQS con DLQ, secretos, IoT Core y alertas operativas.
-Los stacks SQS, secretos e IoT pertenecen a flujos existentes y no deben
-confundirse con el nuevo batch medallion.
+`infrastructure` contiene los stacks AWS batch del proyecto de café:
+almacenamiento S3 medallion y plataforma Glue/Step Functions/Data
+Catalog/Athena. La infraestructura IoT está en `streaming/infrastructure`.
 
-El bucket compartido de S3 funciona como data lake para los flujos históricos y streaming. Sus zonas lógicas son:
-
-```text
-bronze/  # datos recibidos, sin transformación
-silver/  # datos validados, limpios y particionados
-gold/    # datos agregados para analítica
-```
-
-Las zonas son prefijos dentro del mismo bucket para conservar un único punto de administración, cifrado, versionado y control de acceso. El stack no crea tres buckets distintos porque la separación lógica permite compartir políticas y facilita el gobierno del lago sin duplicar infraestructura.
-
-El batch nuevo no utiliza MongoDB. Los componentes de MongoDB que aún aparecen
-en otros módulos pertenecen al flujo legado o streaming y se retirarán cuando
-ese flujo tenga su propia persistencia en S3.
+La arquitectura aprobada no incluye PostgreSQL/RDS, MongoDB, SQS, DLQ, SNS,
+Secrets Manager ni una base operativa separada. Esos componentes fueron
+eliminados. S3 es el almacenamiento del data lake y Glue procesa las capas
+medallion.
 
 ## Configuración
 
@@ -43,10 +33,14 @@ Cada stack vive dentro de `serverless/<stack>` y se despliega de forma independi
 Orden recomendado:
 
 1. `serverless/storage`
-2. El stack batch (`../../serverless`)
-3. `serverless/queue`, `serverless/secrets` e `serverless/iot` solo si el flujo
-   legado/streaming los requiere
-4. `serverless/alerts`
+2. `serverless/data-platform`
+
+La infraestructura IoT se despliega desde
+`streaming/infrastructure/serverless/iot` después de que exista el bucket de
+datos del stack `storage`.
+
+Los stacks excluidos de la arquitectura anterior fueron eliminados y no deben
+reintroducirse.
 
 ### Eliminación
 
@@ -70,8 +64,6 @@ Usa `serverless remove` en orden inverso al despliegue.
 ### Service environment variables: `.envs/config.env`
 
 - `DEVELOPER`: identificador del desarrollador para nombres únicos de recursos.
-- `MONGO_HOST`, `MONGO_USERNAME`, `MONGO_PASSWORD`, `MONGO_DBNAME`: credenciales de MongoDB Atlas para el secret compartido.
-- `ALERTS_EMAIL`: correo del equipo para las alertas de SNS.
 
 ### Variables de despliegue Serverless
 

@@ -1,11 +1,72 @@
-# Glue ETL
+# Glue batch pipeline
 
-`bronze_to_silver.py` reads the original historical CSV from Bronze, validates
-and types its columns, writes valid records as partitioned Parquet in Silver,
-and writes rejected records as JSON in the quarantine prefix.
+## Contrato de entrada y salida
 
-`silver_to_gold.py` aggregates Silver by year, month and location and writes
-the analytical result as partitioned Parquet in Gold.
+| Job | Entrada | Salidas | Formato |
+| --- | --- | --- | --- |
+| `job_bronze_to_silver.py` | `s3://<bucket>/bronze/historical/` | `silver/historical/`, `silver/rejected/`, `silver/duplicates/`, `silver/quality/` | JSON |
+| `job_silver_to_gold.py` | `s3://<bucket>/silver/historical/` | `gold/historical/` | Parquet |
 
-The jobs are intentionally independent of MongoDB. Glue receives paths and the
-dataset identifier as job arguments from Step Functions.
+Job 1 valida y normaliza las 19 columnas históricas, elimina duplicados
+exactos y conserva diagnósticos. Silver usa una partición estable por `YEAR` y
+`MM`; no cambia la estructura según el número de años de cada archivo. Job 2
+agrupa por `Location`, `YEAR` y `MM` para producir los indicadores
+documentados en `docs/data-dictionary.md`.
+
+Job 1 usa `spark.sql.sources.partitionOverwriteMode=dynamic` junto con
+`mode('overwrite')`. Una ejecución reemplaza únicamente las particiones
+`YEAR/MM` que recibió y conserva las demás particiones históricas. Esto
+permite reprocesar un mes sin borrar otros años. La reejecución debe leer el
+mismo alcance de Bronze para que la deduplicación y la validación sean
+deterministas.
+
+Las salidas de rechazos y duplicados se escriben bajo
+`run_id=<JOB_RUN_ID>` para conservar el diagnóstico de cada ejecución. El
+resumen de calidad en `silver/quality/run_id=<JOB_RUN_ID>/` incluye conteos de
+entrada, válidos, rechazados y duplicados, número de particiones afectadas y
+el rango de fechas válido. Actualmente es evidencia operacional; los
+umbrales que deban detener el pipeline deben definirse con datos reales.
+
+La granularidad recomendada es:
+
+- `YEAR/MM` para el histórico actual: permite consultar un año completo o un
+  mes con partition pruning sin crear demasiadas particiones.
+- `YEAR/MM/DD` únicamente si el volumen crece lo suficiente para que cada mes
+  produzca archivos grandes y las consultas operativas filtren por día.
+- No se recomienda alternar entre solo `MM`, solo `YEAR` o `YEAR/MM` según si
+  un archivo contiene uno o varios años. Una tabla debe conservar las mismas
+  claves de partición para que Glue Data Catalog, Athena y los reintentos sean
+  compatibles. Con `YEAR/MM`, un dataset de un solo año simplemente crea las
+  particiones de ese año; al llegar otro año se agregan sin migrar las
+  anteriores.
+
+Los jobs se ejecutan mediante Step Functions con la integración
+`glue:startJobRun.sync`. No deben ejecutarse directamente en producción sin
+publicar primero los scripts y revisar la configuración resuelta.
+
+## Publicación
+
+El publicador debe ejecutarse en un entorno con PowerShell y AWS CLI
+configurados. Desde PowerShell:
+
+```powershell
+./publish-scripts.ps1 -BucketName <data-lake-bucket> -Region us-east-1
+```
+
+Para el entorno `dev` de este proyecto:
+
+```powershell
+./publish-scripts.ps1 `
+  -BucketName coffee-cultivation-coffee-data-lake-dev-aaccode `
+  -Region us-east-1
+```
+
+El publicador genera los dos scripts y `coffee-pipeline.zip`, que contiene el
+código compartido de `src/common` y `src/pipeline`.
+
+Si solo cambió un Job o el código compartido, vuelve a ejecutar este comando
+para actualizar los objetos bajo `s3://<data-lake-bucket>/glue/`; no es
+necesario redesplegar todos los stacks. Después inicia una nueva ejecución de
+Step Functions. Si cambió la definición de Glue, Step Functions, Data Catalog
+o Athena, publica primero los scripts y luego redespliega el stack
+`batch/infrastructure/serverless/data-platform`.
