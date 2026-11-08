@@ -1,0 +1,54 @@
+{
+  "description": "Dashboard contract for the historical and IoT Gold datasets.",
+  "datasets": [
+    {
+      "id": "historical-gold",
+      "catalog": "AwsDataCatalog",
+      "table": "coffee_historical_gold",
+      "dimensions": ["Location", "YEAR", "MM"],
+      "measures": [
+        "record_count",
+        "avg_temp_max",
+        "avg_temp_min",
+        "avg_humidity",
+        "total_precipitation_mm",
+        "avg_solar_radiation",
+        "avg_close_usd_60kg"
+      ]
+    },
+    {
+      "id": "iot-gold",
+      "catalog": "AwsDataCatalog",
+      "table": "coffee_iot_gold",
+      "dimensions": ["sensor_id", "location", "YEAR", "MM"],
+      "measures": [
+        "record_count",
+        "avg_temp_max",
+        "avg_temp_min",
+        "avg_humidity",
+        "total_precipitation_mm",
+        "avg_soil_ph",
+        "avg_soil_moisture",
+        "avg_n",
+        "avg_p",
+        "avg_k"
+      ]
+    }
+  ],
+  "dashboard_views": [
+    "Historical monthly climate and price summary",
+    "IoT sensor monthly conditions and nutrient summary"
+  ],
+  "deployment": {
+    "requires": [
+      "QuickSight subscription in the AWS account",
+      "QuickSightPrincipalArn",
+      "Athena and Glue permissions for the QuickSight service role"
+    ],
+    "validation": [
+      "Confirm both datasets can query their Athena tables",
+      "Apply YEAR/MM filters and verify partition pruning",
+      "Create dashboard visuals from the declared dimensions and measures"
+    ]
+  }
+}

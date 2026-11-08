@@ -1,7 +1,5 @@
 import random
 
-import pytest
-
 from simulator.simulate_coffee_sensors import build_payload
 from streaming_src.common.coffee_rules import validate_coffee_reading
 

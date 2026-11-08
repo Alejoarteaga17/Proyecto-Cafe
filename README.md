@@ -39,10 +39,19 @@ Los sensores simulados publican eventos vía MQTT a AWS IoT Core. Una regla los 
 
 ### Orquestación, consulta y alcance
 
-Step Functions coordina Glue Job 1 y Glue Job 2 con reintentos y transición de
-fallo. Athena consulta las tablas del Glue Data Catalog. QuickSight y la
-automatización DataOps se mantienen como trabajo del sprint final; la
-documentación no implica que exista un dashboard desplegado.
+Existen dos state machines independientes: `HistoricalEtlStateMachine` coordina
+el procesamiento histórico y `IotEtlStateMachine` coordina el procesamiento IoT.
+Cada una ejecuta su propio Glue Job 1 (Bronze -> Silver) y, solo después de
+éxito, su propio Glue Job 2 (Silver -> Gold), con reintentos y transición de
+fallo. Athena consulta las tablas del Glue Data Catalog.
+
+El stack incluye una configuración QuickSight opcional, desactivada por defecto,
+para una fuente Athena y datasets de `coffee_historical_gold` y
+`coffee_iot_gold`. La creación del dashboard requiere activar el parámetro,
+proporcionar un principal autorizado y contar con una suscripción QuickSight.
+El contrato de visualizaciones está en
+[`docs/quicksight-dashboard-definition.json`](docs/quicksight-dashboard-definition.json).
+DataOps permanece reservado para el sprint final.
 
 ### Estructura del repositorio
 
@@ -50,7 +59,8 @@ documentación no implica que exista un dashboard desplegado.
   pruebas del pipeline batch.
 - **`streaming/`**: simulador IoT, contrato de sensores, pruebas e
   infraestructura IoT Core → Data Firehose → S3 Bronze.
-- **`batch/infrastructure/serverless/data-platform/`**: Glue, Step Functions, Glue Data Catalog y Athena.
+- **`batch/infrastructure/serverless/data-platform/`**: Glue, dos state
+  machines Step Functions, Glue Data Catalog, Athena y QuickSight opcional.
 - **`frontend/`**: interfaz ligera para pruebas de carga CSV y validación del backend.
 - **`docs/`**: arquitectura, contratos, diccionario, catálogo, lineage, RACI,
   optimizaciones y estado de aceptación.
@@ -160,13 +170,26 @@ Los stacks dependen de parámetros SSM y del bucket creado por el stack
    ```
 
 3. **Crear la plataforma de procesamiento y consulta** (Glue Jobs, Step
-   Functions, Glue Data Catalog y Athena):
+   Functions, Glue Data Catalog, Athena y configuración QuickSight opcional):
 
    ```bash
    cd /app/batch/infrastructure/serverless/data-platform
    serverless print --stage dev
    serverless deploy --stage dev
    ```
+
+   QuickSight permanece desactivado por defecto. Para crear su fuente Athena y
+   datasets, solo con una suscripción y principal autorizado:
+
+   ```bash
+   serverless deploy --stage dev \
+     --param='QuickSightEnabled=true' \
+     --param='QuickSightPrincipalArn=arn:aws:quicksight:us-east-1:<account>:user/<namespace>/<user>'
+   ```
+
+   Esta operación crea recursos account-specific y requiere revisión/autorización
+   previa. El dashboard visual debe construirse usando el contrato de
+   [`docs/quicksight-dashboard-definition.json`](docs/quicksight-dashboard-definition.json).
 
 4. **Desplegar la API de carga histórica y Lambda**:
 

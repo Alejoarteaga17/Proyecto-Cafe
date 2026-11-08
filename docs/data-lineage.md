@@ -34,4 +34,6 @@ Las tablas Bronze, Silver y Gold están declaradas en
 `batch/infrastructure/serverless/data-platform/resources.yml`. La tabla Gold
 fue verificada en AWS mediante Athena después de que Job 2 registrara la
 partición `YEAR=2026/MM=8`; una consulta de conteo devolvió `1` registro.
-QuickSight permanece reservado para el sprint final.
+QuickSight tiene configuración IaC opcional y un contrato de dashboard en
+`docs/quicksight-dashboard-definition.json`; su activación y validación visual
+requieren una suscripción, principal y permisos de la cuenta AWS.

@@ -125,6 +125,23 @@ Do not assume that orchestration automatically exists just because the two Glue 
 
 Do not add extra orchestration services or processing stages without an explicit architectural decision.
 
+The repository has two independent processing workflows. They must not be
+treated as one generic pipeline:
+
+- Historical workflow: `HistoricalEtlStateMachine` starts
+  `BronzeToSilverJob` with `bronze/historical/` as input and
+  `silver/historical/` as output, then starts `SilverToGoldJob` only after
+  success and writes to `gold/historical/`.
+- IoT workflow: `IotEtlStateMachine` starts `IotBronzeToSilverJob` with
+  `bronze/iot/` as input and `silver/iot/` as output, then starts
+  `IotSilverToGoldJob` only after success and writes to `gold/iot/`.
+
+Keep the job scripts, shared transformation modules, rejected/duplicate
+prefixes, catalog tables, schemas and state-machine names aligned with their
+own workflow. Never pass historical CSV paths to an IoT job or IoT JSON paths
+to a historical job. Evidence from one workflow cannot be used to claim that
+the other workflow was deployed or validated.
+
 ### 1.5 Analytical querying and visualization
 
 The final analytical flow is:
@@ -147,6 +164,14 @@ Ensure that Athena tables point to the correct Gold locations and use schemas co
 Use the Data Catalog consistently. Create tables, crawlers, or other catalog resources only when required by the selected implementation.
 
 Do not assume that QuickSight dashboards, Athena tables, or catalog definitions already exist. Verify their implementation and configuration.
+
+QuickSight is implemented in the repository as an optional, parameterized
+configuration. `quicksight.yml` defines an Athena data source and datasets for
+`coffee_historical_gold` and `coffee_iot_gold`, disabled by default to prevent
+account-specific resource creation without an explicit principal and
+authorization. `docs/quicksight-dashboard-definition.json` is the dashboard
+contract. A QuickSight subscription, principal ARN, service permissions and
+actual dashboard validation remain environment-specific deployment steps.
 
 Document the required permissions, data locations, supported formats, and integration dependencies.
 
@@ -392,7 +417,9 @@ Verify which resources have actually been implemented.
 
 IaC must be reproducible, parameterized where appropriate, security-conscious, and documented. Include validation steps and deployment instructions.
 
-Do not claim that a resource is deployed solely because its definition exists in the repository.
+Do not claim that a resource is deployed solely because its definition exists in the repository. An optional QuickSight definition with
+`QuickSightEnabled=false` is configuration evidence, not a deployed data
+source, dataset or dashboard.
 
 ### 9.3 Data pipeline implementation
 
@@ -414,7 +441,9 @@ Do not expand the current sprint scope into a complete DataOps platform or finis
 For the final-sprint boundary:
 
 - DataOps automation, pipelines, monitoring workflows, or deployment automation beyond the agreed current scope must be identified as pending when not yet implemented.
-- End-user data consumption, dashboards, or other consumption-layer functionality must be identified as pending when not yet implemented.
+- End-user dashboard creation and consumption validation must be identified as
+  pending when not yet implemented. Repository QuickSight configuration and
+  dataset contracts do not prove that a dashboard exists.
 - Foundational infrastructure required by the approved architecture must still be documented and prepared as appropriate.
 - Do not confuse the existence of Athena or QuickSight infrastructure definitions with a fully implemented consumption solution.
 

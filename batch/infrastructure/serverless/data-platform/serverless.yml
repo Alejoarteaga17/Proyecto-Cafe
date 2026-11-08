@@ -9,6 +9,7 @@ provider:
 
 resources:
   - ${file(resources.yml)}
+  - ${file(quicksight.yml)}
 
 custom:
   bucketName: ${ssm:/${env:DEPLOY_APP, 'coffee-cultivation'}-storage/DataLakeBucketName}

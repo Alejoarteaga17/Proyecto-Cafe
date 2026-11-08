@@ -8,9 +8,9 @@
 | IoT sensors -> IoT Core -> Data Firehose -> S3 Bronze | COMPLETE; validado con evento MQTT en AWS de desarrollo | `streaming/infrastructure/serverless/iot/iot.yml`, `streaming/simulator/simulate_coffee_sensors.py`, `docs/acceptance-checklist.md` |
 | Bronze -> Glue Job 1 -> Silver | COMPLETE; validado localmente y en AWS de desarrollo | `batch/glue/job_bronze_to_silver.py`, `batch/tests/test_transformations.py`, `docs/acceptance-checklist.md` |
 | Silver -> Glue Job 2 -> Gold | COMPLETE; validado localmente y en AWS de desarrollo | `batch/glue/job_silver_to_gold.py`, `batch/tests/test_transformations.py`, `docs/acceptance-checklist.md` |
-| Step Functions histórico e IoT | COMPLETE en IaC; ejecución end-to-end histórica verificada en AWS de desarrollo | `batch/infrastructure/serverless/data-platform/resources.yml`, `docs/acceptance-checklist.md` |
-| Glue Data Catalog y Athena | COMPLETE en IaC; consulta histórica verificada en AWS de desarrollo | `batch/infrastructure/serverless/data-platform/resources.yml`, `docs/acceptance-checklist.md` |
-| QuickSight | DEFERRED TO FINAL SPRINT | No se añade dashboard de consumo en este sprint |
+| Step Functions histórico e IoT | COMPLETE en IaC; ejecución AWS no verificada en esta revisión | `batch/infrastructure/serverless/data-platform/resources.yml`, `docs/acceptance-checklist.md` |
+| Glue Data Catalog y Athena | COMPLETE en IaC; consulta AWS no verificada en esta revisión | `batch/infrastructure/serverless/data-platform/resources.yml`, `docs/acceptance-checklist.md` |
+| QuickSight | PARTIAL: configuración IaC y contrato COMPLETE; dashboard NOT VERIFIED | `batch/infrastructure/serverless/data-platform/quicksight.yml`, `docs/quicksight-dashboard-definition.json`; requiere suscripción, principal y permisos AWS |
 
 ## Flujos
 

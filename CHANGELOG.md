@@ -4,6 +4,9 @@
 
 ### Added
 
+- Optional QuickSight Athena data source and historical/IoT Gold datasets,
+  disabled by default, plus a dashboard contract for account-specific setup.
+- Contract tests covering the separation of historical and IoT Step Functions.
 - Athena optimization benchmark queries and documentation for comparing
   partition pruning, Parquet Gold and the unoptimized Bronze baseline.
 - Expanded local test coverage for batch validation, CSV upload edge cases,
@@ -61,5 +64,6 @@
 
 ### Pending
 
-- QuickSight consumption remains deferred to the final sprint. DataOps
-  automation remains deferred to the final sprint.
+- QuickSight dashboard activation and account-specific validation require a
+  subscription, authorized principal and AWS permissions.
+- DataOps automation remains deferred to the final sprint.
