@@ -57,6 +57,11 @@ Resources:
                   - firehose:PutRecord
                   - firehose:PutRecordBatch
                 Resource: !GetAtt SensorFirehose.Arn
+              - Effect: Allow
+                Action:
+                  - states:StartExecution
+                Resource:
+                  - Fn::ImportValue: data-platform-${self:custom.stage}-IotStateMachineArn
 
   SensorReadingsTopicRule:
     Type: AWS::IoT::TopicRule
@@ -75,6 +80,14 @@ Resources:
               DeliveryStreamName: !Ref SensorFirehose
               RoleArn: !GetAtt SensorReadingsTopicRuleRole.Arn
               Separator: "\n"
+          - StepFunctions:
+              StateMachineName:
+                Fn::Select:
+                  - 6
+                  - Fn::Split:
+                      - ':'
+                      - Fn::ImportValue: data-platform-${self:custom.stage}-IotStateMachineArn
+              RoleArn: !GetAtt SensorReadingsTopicRuleRole.Arn
 
   SensorFirehose:
     Type: AWS::KinesisFirehose::DeliveryStream

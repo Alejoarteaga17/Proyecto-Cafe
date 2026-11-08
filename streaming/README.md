@@ -15,7 +15,9 @@ Esta carpeta contiene únicamente los componentes IoT aprobados:
 - `infrastructure/serverless/iot/`: Thing, política IoT, regla y Firehose.
 
 El stack `iot` declara un Thing para el simulador, una política de publicación,
-una regla IoT y un delivery stream Firehose hacia `bronze/iot/`. La asociación
+una regla IoT y un delivery stream Firehose hacia `bronze/iot/`. La misma
+regla inicia automáticamente `IotEtlStateMachine` después de cada evento,
+sin interrumpir la entrega a Bronze. La asociación
 de un certificado X.509 al Thing requiere una operación de seguridad de la
 cuenta AWS y no se afirma como desplegada por la definición IaC.
 
@@ -83,9 +85,11 @@ El despliegue requiere autorización explícita y credenciales AWS configuradas.
 El simulador valida cada evento antes de imprimirlo. Cada lectura se publica
 en `sensors/coffee/<sensor-id>/data`; el `sensor_id` se obtiene de ese topic
 mediante la regla IoT y no se incluye en el payload controlado por el cliente.
-El procesamiento IoT se ejecuta manualmente desde su state machine separada:
-IoT Glue Job 1 valida, deduplica por `sensor_id + timestamp` y escribe Silver
-`YEAR/MM`; IoT Glue Job 2 escribe Gold Parquet agregado.
+La regla IoT inicia automáticamente su state machine separada después de cada
+evento: IoT Glue Job 1 valida, deduplica por `sensor_id + timestamp` y escribe
+Silver `YEAR/MM`; IoT Glue Job 2 escribe Gold Parquet agregado. Para pruebas de
+volumen alto, considera que cada evento inicia una ejecución independiente de
+Glue y puede producir concurrencia.
 
 Para publicar respetando el sensor seleccionado, el simulador usa por defecto
 el topic `sensors/coffee/<sensor-id>/data`. Si se usa `--topic`, debe ser una

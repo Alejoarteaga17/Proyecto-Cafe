@@ -4,7 +4,11 @@
 
 1. Historical CSV (Kaggle) -> API Gateway -> Lambda: validación de encabezados, formato, tamaño y filas no vacías.
 2. Lambda -> S3 Bronze: conserva el archivo crudo bajo `bronze/historical/`.
-3. Simulated IoT sensors -> AWS IoT Core -> Amazon Data Firehose -> S3 Bronze: el simulador valida y emite eventos JSON en `sensors/coffee/<sensor-id>/data`; IoT Core deriva `sensor_id` del topic y Firehose entrega bajo `bronze/iot/`.
+3. Simulated IoT sensors -> AWS IoT Core -> Amazon Data Firehose -> S3 Bronze:
+   el simulador valida y emite eventos JSON en
+   `sensors/coffee/<sensor-id>/data`; IoT Core deriva `sensor_id` del topic y
+   Firehose entrega bajo `bronze/iot/`. La misma regla inicia
+   `IotEtlStateMachine` directamente, sin un consumidor intermedio.
 4. S3 Bronze -> Glue Job 1 -> S3 Silver: validación, normalización,
    deduplicación, particionado y salidas de calidad. Los rechazos, duplicados
    y métricas se conservan bajo `run_id=<JOB_RUN_ID>` para cada ejecución.

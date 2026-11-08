@@ -68,9 +68,13 @@ Resources:
             - quicksight:DescribeDataSet
             - quicksight:DescribeDataSetPermissions
             - quicksight:PassDataSet
+            - quicksight:DescribeIngestion
+            - quicksight:ListIngestions
             - quicksight:UpdateDataSet
             - quicksight:UpdateDataSetPermissions
             - quicksight:DeleteDataSet
+            - quicksight:CreateIngestion
+            - quicksight:CancelIngestion
 
   QuickSightIotDataset:
     Type: AWS::QuickSight::DataSet
@@ -109,9 +113,13 @@ Resources:
             - quicksight:DescribeDataSet
             - quicksight:DescribeDataSetPermissions
             - quicksight:PassDataSet
+            - quicksight:DescribeIngestion
+            - quicksight:ListIngestions
             - quicksight:UpdateDataSet
             - quicksight:UpdateDataSetPermissions
             - quicksight:DeleteDataSet
+            - quicksight:CreateIngestion
+            - quicksight:CancelIngestion
 
 Outputs:
   QuickSightAthenaDataSourceArn:

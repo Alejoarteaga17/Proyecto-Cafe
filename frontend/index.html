@@ -3,11 +3,12 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Publicar CSV histórico</title>
+    <title>Cultivo de Café</title>
+    <script src="https://unpkg.com/amazon-quicksight-embedding-sdk@2.10.2/dist/quicksight-embedding-js-sdk.min.js"></script>
     <style>
       :root {
         --background: #f4f7f2;
-        --card: #ffffff;
+        --card: #fff;
         --primary: #28643a;
         --primary-dark: #1d4d2b;
         --text: #1c2b20;
@@ -16,53 +17,61 @@
         --error: #a52f2f;
         --success: #236b3b;
       }
-
       * { box-sizing: border-box; }
-
       body {
         margin: 0;
-        padding: 32px 16px;
+        padding: 24px;
         background: var(--background);
         color: var(--text);
         font-family: Arial, Helvetica, sans-serif;
       }
-
-      main {
-        width: min(680px, 100%);
-        margin: 0 auto;
+      main { width: min(1500px, 100%); margin: 0 auto; }
+      h1 { margin: 0 0 6px; color: var(--primary-dark); }
+      h2 { margin-top: 0; color: var(--primary-dark); }
+      .intro { margin: 0; color: var(--muted); line-height: 1.5; }
+      .header { margin-bottom: 18px; }
+      .tabs {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 16px;
+        border-bottom: 1px solid var(--border);
       }
-
+      .access-card { margin-bottom: 16px; }
+      .tab {
+        margin: 0;
+        border-radius: 8px 8px 0 0;
+        background: transparent;
+        color: var(--primary-dark);
+      }
+      .tab.active { background: var(--primary); color: #fff; }
+      .panel { display: none; }
+      .panel.active { display: block; }
       .card {
-        padding: 28px;
+        padding: 24px;
         background: var(--card);
         border: 1px solid var(--border);
         border-radius: 16px;
         box-shadow: 0 8px 24px rgba(28, 43, 32, 0.08);
       }
-
-      h1 { margin: 0 0 8px; color: var(--primary-dark); }
-      .intro { margin: 0 0 24px; color: var(--muted); line-height: 1.5; }
       label { display: block; margin: 16px 0 6px; font-weight: 700; }
-
       input {
         width: 100%;
-        padding: 12px;
+        padding: 11px;
         border: 1px solid #b9c9ba;
         border-radius: 8px;
         font: inherit;
       }
-
-      input:focus {
-        outline: 2px solid #a9cdb0;
-        border-color: var(--primary);
+      button {
+        padding: 11px 16px;
+        border: 0;
+        border-radius: 8px;
+        background: var(--primary);
+        color: white;
+        cursor: pointer;
+        font-weight: 700;
       }
-
-      .hint {
-        margin: 6px 0 0;
-        color: var(--muted);
-        font-size: 0.88rem;
-      }
-
+      button:hover { background: var(--primary-dark); }
+      button:disabled { cursor: wait; opacity: 0.65; }
       .drop-zone {
         display: flex;
         flex-direction: column;
@@ -76,41 +85,12 @@
         cursor: pointer;
         text-align: center;
       }
-
       .drop-zone strong { color: var(--primary-dark); }
-      .drop-zone small { color: var(--text); }
-      .drop-zone.drag-over,
-      .drop-zone:focus {
-        outline: 2px solid #8bbd96;
-        border-color: var(--primary);
-        background: #eef8ef;
-      }
-
+      .drop-zone.drag-over { border-color: var(--primary); background: #eef8ef; }
       .actions { margin-top: 22px; }
-
-      button {
-        padding: 12px 18px;
-        border: 0;
-        border-radius: 8px;
-        background: var(--primary);
-        color: white;
-        cursor: pointer;
-        font-weight: 700;
-        font-size: 1rem;
-      }
-
-      button:hover { background: var(--primary-dark); }
-      button:disabled { cursor: wait; opacity: 0.65; }
-
-      #status {
-        min-height: 24px;
-        margin-top: 18px;
-        line-height: 1.45;
-      }
-
-      #status.error { color: var(--error); }
-      #status.success { color: var(--success); }
-
+      .status { min-height: 24px; margin-top: 16px; line-height: 1.45; }
+      .status.error { color: var(--error); }
+      .status.success { color: var(--success); }
       pre {
         max-height: 240px;
         overflow: auto;
@@ -121,7 +101,6 @@
         white-space: pre-wrap;
         word-break: break-word;
       }
-
       .warning {
         margin-top: 22px;
         padding: 12px;
@@ -131,106 +110,112 @@
         font-size: 0.9rem;
         line-height: 1.45;
       }
+      #dashboardContainer {
+        min-height: 760px;
+        margin-top: 16px;
+        overflow: hidden;
+        padding: 0;
+      }
+      #dashboardContainer iframe { width: 100%; min-height: 760px; border: 0; }
+      .dashboard-controls { max-width: 760px; }
+      @media (max-width: 720px) {
+        body { padding: 12px; }
+        .tabs { overflow-x: auto; }
+        #dashboardContainer, #dashboardContainer iframe { min-height: 620px; }
+      }
     </style>
   </head>
   <body>
     <main>
-      <section class="card">
-        <h1>Publicar CSV histórico</h1>
-        <p class="intro">
-          Arrastra un CSV a la zona de carga y publícalo en API Gateway.
-          Lambda validará el archivo antes de guardarlo en S3 Bronze.
-        </p>
+      <header class="header">
+        <h1>Cultivo Inteligente de Café</h1>
+        <p class="intro">Publica datos históricos y visualiza el dashboard en la misma aplicación.</p>
+      </header>
 
-        <label for="csvFile">Archivo CSV</label>
-        <div
-          id="dropZone"
-          class="drop-zone"
-          role="button"
-          tabindex="0"
-          aria-controls="csvFile"
-        >
-          <strong>Arrastra y suelta tu CSV aquí</strong>
-          <span>o haz clic para seleccionarlo desde tu equipo</span>
-          <small id="selectedFile">Ningún archivo seleccionado</small>
+      <nav class="tabs" aria-label="Secciones de la aplicación">
+        <button class="tab active" data-tab="upload" type="button">Publicar CSV</button>
+        <button class="tab" data-tab="dashboard" type="button">Dashboard</button>
+      </nav>
+
+      <section class="card access-card">
+        <label for="apiKey">API Key de API Gateway</label>
+        <input id="apiKey" type="password" placeholder="Pega la API Key sin guardarla en el código" autocomplete="off" />
+        <p class="intro">La misma clave se utiliza para publicar el CSV y cargar el dashboard.</p>
+      </section>
+
+      <section id="upload" class="panel active" aria-labelledby="upload-tab">
+        <div class="card">
+          <h2>Publicar CSV histórico</h2>
+          <p class="intro">Lambda validará el archivo antes de guardarlo en S3 Bronze.</p>
+          <label for="csvFile">Archivo CSV</label>
+          <div id="dropZone" class="drop-zone" role="button" tabindex="0" aria-controls="csvFile">
+            <strong>Arrastra y suelta tu CSV aquí</strong>
+            <span>o haz clic para seleccionarlo desde tu equipo</span>
+            <small id="selectedFile">Ningún archivo seleccionado</small>
+          </div>
+          <input id="csvFile" type="file" accept=".csv,text/csv" hidden />
+          <label for="uploadApiUrl">URL de API Gateway</label>
+          <input id="uploadApiUrl" type="url" value="https://iwmkiead9h.execute-api.us-east-1.amazonaws.com/dev/coffee-historical-data" autocomplete="url" />
+          <div class="actions">
+            <button id="publishButton" type="button">Publicar CSV</button>
+          </div>
+          <div id="uploadStatus" class="status" role="status" aria-live="polite"></div>
+          <pre id="uploadResponse" hidden></pre>
         </div>
-        <input id="csvFile" type="file" accept=".csv,text/csv" hidden />
+      </section>
 
-        <label for="apiUrl">URL de API Gateway</label>
-        <input
-          id="apiUrl"
-          type="url"
-          value="https://iwmkiead9h.execute-api.us-east-1.amazonaws.com/dev/coffee-historical-data"
-          autocomplete="url"
-          required
-        />
-
-        <label for="apiKey">API Key</label>
-        <input
-          id="apiKey"
-          type="password"
-          placeholder="Pega aquí la API Key sin guardarla en el código"
-          autocomplete="off"
-          required
-        />
-
-        <div class="actions">
-          <button id="publishButton" type="button">Publicar CSV</button>
+      <section id="dashboard" class="panel" aria-labelledby="dashboard-tab">
+        <div class="card dashboard-controls">
+          <h2>Dashboard de Cultivo de Café</h2>
+          <p class="intro">Datos Gold históricos y telemetría IoT en QuickSight.</p>
+          <label for="embedApiUrl">Endpoint de embedding</label>
+          <input id="embedApiUrl" type="url" value="https://iwmkiead9h.execute-api.us-east-1.amazonaws.com/dev/coffee-dashboard/embed-url" autocomplete="url" />
+          <div class="actions">
+            <button id="loadButton" type="button">Cargar dashboard</button>
+          </div>
+          <div id="dashboardStatus" class="status" role="status" aria-live="polite">
+            Introduce la API Key y pulsa Cargar dashboard.
+          </div>
+          <div class="warning">La API Key solo permanece en memoria durante esta sesión del navegador.</div>
         </div>
-
-        <div id="status" role="status" aria-live="polite"></div>
-        <pre id="response" hidden></pre>
-
-        <div class="warning">
-          La API Key se utiliza únicamente en memoria durante esta sesión del
-          navegador. No la guardes en este archivo ni subas un frontend que la
-          contenga.
-        </div>
+        <section id="dashboardContainer" class="card" aria-label="Dashboard QuickSight"></section>
       </section>
     </main>
 
     <script>
+      const apiKeyInput = document.getElementById('apiKey');
+      const tabs = document.querySelectorAll('.tab');
+      const panels = document.querySelectorAll('.panel');
       const csvFileInput = document.getElementById('csvFile');
       const dropZone = document.getElementById('dropZone');
       const selectedFileBox = document.getElementById('selectedFile');
-      const apiUrlInput = document.getElementById('apiUrl');
-      const apiKeyInput = document.getElementById('apiKey');
       const publishButton = document.getElementById('publishButton');
-      const statusBox = document.getElementById('status');
-      const responseBox = document.getElementById('response');
+      const uploadApiUrlInput = document.getElementById('uploadApiUrl');
+      const uploadStatus = document.getElementById('uploadStatus');
+      const uploadResponse = document.getElementById('uploadResponse');
+      const loadButton = document.getElementById('loadButton');
+      const embedApiUrlInput = document.getElementById('embedApiUrl');
+      const dashboardStatus = document.getElementById('dashboardStatus');
+      const dashboardContainer = document.getElementById('dashboardContainer');
       const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
 
-      function setStatus(message, type = '') {
-        statusBox.textContent = message;
-        statusBox.className = type;
+      function setStatus(element, message, type = '') {
+        element.textContent = message;
+        element.className = `status ${type}`;
       }
 
-      function setResponse(value) {
-        responseBox.hidden = false;
-        responseBox.textContent = JSON.stringify(value, null, 2);
+      function showTab(name, updateHash = true) {
+        tabs.forEach((tab) => tab.classList.toggle('active', tab.dataset.tab === name));
+        panels.forEach((panel) => panel.classList.toggle('active', panel.id === name));
+        if (updateHash) history.replaceState(null, '', `#${name}`);
       }
 
-      function asUrl(value, label) {
-        try {
-          return new URL(value);
-        } catch {
-          throw new Error(`${label} no es una URL válida.`);
-        }
-      }
+      tabs.forEach((tab) => tab.addEventListener('click', () => showTab(tab.dataset.tab)));
+      showTab(location.hash === '#dashboard' ? 'dashboard' : 'upload', false);
 
-      function selectFile(file) {
-        if (!file) {
-          return;
-        }
-        if (!file.name.toLowerCase().endsWith('.csv')) {
-          csvFileInput.value = '';
-          selectedFileBox.textContent = 'Ningún archivo seleccionado';
-          setStatus('Solo se permiten archivos con extensión .csv.', 'error');
-          return;
-        }
-        csvFileInput.files = createFileList(file);
-        selectedFileBox.textContent = `${file.name} (${formatBytes(file.size)})`;
-        setStatus('CSV listo para publicar.');
+      function formatBytes(bytes) {
+        if (bytes < 1024) return `${bytes} B`;
+        return `${(bytes / 1024).toFixed(1)} KB`;
       }
 
       function createFileList(file) {
@@ -239,9 +224,17 @@
         return dataTransfer.files;
       }
 
-      function formatBytes(bytes) {
-        if (bytes < 1024) return `${bytes} B`;
-        return `${(bytes / 1024).toFixed(1)} KB`;
+      function selectFile(file) {
+        if (!file) return;
+        if (!file.name.toLowerCase().endsWith('.csv')) {
+          csvFileInput.value = '';
+          selectedFileBox.textContent = 'Ningún archivo seleccionado';
+          setStatus(uploadStatus, 'Solo se permiten archivos con extensión .csv.', 'error');
+          return;
+        }
+        csvFileInput.files = createFileList(file);
+        selectedFileBox.textContent = `${file.name} (${formatBytes(file.size)})`;
+        setStatus(uploadStatus, 'CSV listo para publicar.');
       }
 
       async function arrayBufferToBase64(buffer) {
@@ -249,9 +242,7 @@
         const chunkSize = 0x8000;
         let binary = '';
         for (let index = 0; index < bytes.length; index += chunkSize) {
-          binary += String.fromCharCode(
-            ...bytes.subarray(index, index + chunkSize),
-          );
+          binary += String.fromCharCode(...bytes.subarray(index, index + chunkSize));
         }
         return btoa(binary);
       }
@@ -260,101 +251,97 @@
         let apiUrl;
         const apiKey = apiKeyInput.value.trim();
         const csvFile = csvFileInput.files[0];
-
         try {
-          apiUrl = asUrl(apiUrlInput.value.trim(), 'La URL de API Gateway');
-          if (!csvFile) {
-            throw new Error('Selecciona o arrastra un archivo CSV.');
-          }
+          apiUrl = new URL(uploadApiUrlInput.value.trim());
+          if (!csvFile) throw new Error('Selecciona o arrastra un archivo CSV.');
           if (csvFile.size > MAX_UPLOAD_BYTES) {
-            throw new Error(
-              `El archivo supera el límite de ${formatBytes(MAX_UPLOAD_BYTES)} ` +
-              'de este endpoint.',
-            );
+            throw new Error(`El archivo supera el límite de ${formatBytes(MAX_UPLOAD_BYTES)}.`);
           }
-          if (!apiKey) {
-            throw new Error('La API Key es obligatoria.');
-          }
+          if (!apiKey) throw new Error('La API Key es obligatoria.');
         } catch (error) {
-          setStatus(error.message, 'error');
+          setStatus(uploadStatus, error.message, 'error');
           return;
         }
-
         publishButton.disabled = true;
-        responseBox.hidden = true;
-        setStatus('Leyendo el CSV...');
-
+        uploadResponse.hidden = true;
         try {
+          setStatus(uploadStatus, 'Leyendo el CSV...');
           const csvBytes = await csvFile.arrayBuffer();
-          if (csvBytes.byteLength === 0) {
-            throw new Error('El archivo CSV está vacío.');
-          }
-
-          setStatus('Enviando el CSV a API Gateway para validación...');
-          const file = await arrayBufferToBase64(csvBytes);
-          const apiResponse = await fetch(apiUrl, {
+          if (csvBytes.byteLength === 0) throw new Error('El archivo CSV está vacío.');
+          setStatus(uploadStatus, 'Enviando el CSV a API Gateway para validación...');
+          const response = await fetch(apiUrl, {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'x-api-key': apiKey,
-            },
-            body: JSON.stringify({ file }),
+            headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey },
+            body: JSON.stringify({ file: await arrayBufferToBase64(csvBytes) }),
           });
-
-          const responseText = await apiResponse.text();
+          const text = await response.text();
           let body;
-          try {
-            body = JSON.parse(responseText);
-          } catch {
-            body = { raw: responseText };
-          }
-
-          setResponse({
-            status: apiResponse.status,
-            ok: apiResponse.ok,
-            body,
-          });
-
-          if (!apiResponse.ok) {
-            throw new Error(`La API rechazó el archivo (HTTP ${apiResponse.status}).`);
-          }
-
-          setStatus('CSV publicado correctamente en S3 Bronze.', 'success');
+          try { body = JSON.parse(text); } catch { body = { raw: text }; }
+          uploadResponse.hidden = false;
+          uploadResponse.textContent = JSON.stringify({ status: response.status, ok: response.ok, body }, null, 2);
+          if (!response.ok) throw new Error(`La API rechazó el archivo (HTTP ${response.status}).`);
+          setStatus(
+            uploadStatus,
+            'CSV publicado en S3 Bronze y procesamiento histórico iniciado automáticamente.',
+            'success',
+          );
         } catch (error) {
-          setStatus(error.message || 'No se pudo publicar el CSV.', 'error');
-          if (!responseBox.textContent) {
-            setResponse({ error: error.message });
-          }
+          setStatus(uploadStatus, error.message || 'No se pudo publicar el CSV.', 'error');
         } finally {
           publishButton.disabled = false;
         }
       }
 
-      csvFileInput.addEventListener('change', () => {
-        selectFile(csvFileInput.files[0]);
-      });
+      async function loadDashboard() {
+        let url;
+        try {
+          url = new URL(embedApiUrlInput.value.trim());
+          if (!apiKeyInput.value.trim()) throw new Error('Introduce la API Key de API Gateway.');
+        } catch (error) {
+          setStatus(dashboardStatus, error.message, 'error');
+          return;
+        }
+        loadButton.disabled = true;
+        dashboardContainer.replaceChildren();
+        try {
+          if (!window.QuickSightEmbedding) throw new Error('No se pudo cargar el SDK de QuickSight.');
+          url.searchParams.set('_', Date.now().toString());
+          const response = await fetch(url, { headers: { 'x-api-key': apiKeyInput.value.trim() } });
+          const text = await response.text();
+          let body;
+          try { body = JSON.parse(text); } catch { throw new Error(`El endpoint devolvió una respuesta no válida (HTTP ${response.status}).`); }
+          if (!response.ok || !body.embedUrl) throw new Error(body.message || `No se pudo generar la URL (HTTP ${response.status}).`);
+          const context = await window.QuickSightEmbedding.createEmbeddingContext();
+          await context.embedDashboard({
+            url: body.embedUrl, container: dashboardContainer, height: '760px', width: '100%', scrolling: 'no',
+          }, {
+            locale: 'es-ES',
+            onMessage: (event) => {
+              if (event.eventLevel === 'ERROR') setStatus(dashboardStatus, 'QuickSight reportó un error al cargar el dashboard.', 'error');
+            },
+          });
+          setStatus(dashboardStatus, 'Dashboard cargado. La URL temporal no se guarda en el navegador.');
+        } catch (error) {
+          setStatus(dashboardStatus, error.message || 'No se pudo cargar el dashboard.', 'error');
+        } finally {
+          loadButton.disabled = false;
+        }
+      }
 
+      csvFileInput.addEventListener('change', () => selectFile(csvFileInput.files[0]));
       dropZone.addEventListener('click', () => csvFileInput.click());
       dropZone.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault();
-          csvFileInput.click();
-        }
+        if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); csvFileInput.click(); }
       });
-      dropZone.addEventListener('dragover', (event) => {
-        event.preventDefault();
-        dropZone.classList.add('drag-over');
-      });
-      dropZone.addEventListener('dragleave', () => {
-        dropZone.classList.remove('drag-over');
-      });
+      dropZone.addEventListener('dragover', (event) => { event.preventDefault(); dropZone.classList.add('drag-over'); });
+      dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
       dropZone.addEventListener('drop', (event) => {
         event.preventDefault();
         dropZone.classList.remove('drag-over');
         selectFile(event.dataTransfer.files[0]);
       });
-
       publishButton.addEventListener('click', publishCsv);
+      loadButton.addEventListener('click', loadDashboard);
     </script>
   </body>
 </html>

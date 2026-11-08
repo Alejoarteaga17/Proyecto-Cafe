@@ -13,6 +13,9 @@ def test_iot_infrastructure_keeps_sensor_topics_explicit():
         assert f'topic/sensors/coffee/{sensor_id}/data' in template
     assert "topic(3) AS sensor_id" in template
     assert 'EventBridge' not in template
+    assert 'StepFunctions:' in template
+    assert 'states:StartExecution' in template
+    assert 'data-platform-${self:custom.stage}-IotStateMachineArn' in template
 
 
 def test_iot_glue_jobs_use_year_month_partitions_and_separate_paths():

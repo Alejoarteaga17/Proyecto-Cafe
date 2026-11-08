@@ -6,6 +6,18 @@
 
 - Optional QuickSight Athena data source and historical/IoT Gold datasets,
   disabled by default, plus a dashboard contract for account-specific setup.
+- QuickSight Athena source, DIRECT_QUERY datasets and the development dashboard
+  were created and validated in `us-east-1`.
+- Added a unified `frontend/index.html` with CSV publication and QuickSight
+  dashboard tabs served from the same HTTP origin; `dashboard.html` remains a
+  compatibility redirect. The protected Lambda endpoint embeds the published
+  dashboard without exposing AWS credentials.
+- Published QuickSight dashboard version 3 with KPI cards, historical and IoT
+  trend charts, agronomic comparison charts, and detail tables.
+- Historical CSV uploads now start `HistoricalEtlStateMachine` automatically
+  after Bronze validation and storage, returning the execution ARN.
+- IoT Core rules now start `IotEtlStateMachine` directly while preserving the
+  IoT Core -> Firehose -> S3 Bronze delivery path.
 - Contract tests covering the separation of historical and IoT Step Functions.
 - Athena optimization benchmark queries and documentation for comparing
   partition pruning, Parquet Gold and the unoptimized Bronze baseline.
@@ -64,6 +76,6 @@
 
 ### Pending
 
-- QuickSight dashboard activation and account-specific validation require a
-  subscription, authorized principal and AWS permissions.
+- QuickSight replication to another account requires a subscription, authorized
+  principal and AWS permissions.
 - DataOps automation remains deferred to the final sprint.

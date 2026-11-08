@@ -18,5 +18,32 @@ Resources:
             Version: '2012-10-17'
             Statement:
               - Effect: Allow
-                Action: s3:PutObject
+                Action:
+                  - s3:PutObject
                 Resource: ${self:custom.s3.dataLakeBucket.arn}/bronze/historical/*
+              - Effect: Allow
+                Action: states:StartExecution
+                Resource: ${env:HISTORICAL_STATE_MACHINE_ARN, '*'}
+
+  DashboardEmbedRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: ${self:custom.servicePrefix}-DashboardEmbed
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: ${self:custom.servicePrefix}-DashboardEmbed
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - quicksight:GenerateEmbedUrlForRegisteredUser
+                Resource: '*'

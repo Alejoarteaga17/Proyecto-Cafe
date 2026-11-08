@@ -19,6 +19,15 @@ class S3Stub:
         self.calls.append(kwargs)
 
 
+class StepFunctionsStub:
+    def __init__(self):
+        self.calls = []
+
+    def start_execution(self, **kwargs):
+        self.calls.append(kwargs)
+        return {'executionArn': 'arn:aws:states:test:execution/test'}
+
+
 def _event(content):
     encoded = base64.b64encode(content.encode()).decode()
     return {'body': json.dumps({'file': encoded})}
@@ -26,8 +35,15 @@ def _event(content):
 
 def test_upload_writes_raw_csv_to_bronze(monkeypatch):
     s3 = S3Stub()
+    stepfunctions = StepFunctionsStub()
     monkeypatch.setattr(upload_module, 's3_client', s3)
+    monkeypatch.setattr(upload_module, 'stepfunctions_client', stepfunctions)
     monkeypatch.setattr(upload_module, 'BRONZE_BUCKET_NAME', 'test-bronze')
+    monkeypatch.setattr(
+        upload_module,
+        'HISTORICAL_STATE_MACHINE_ARN',
+        'arn:aws:states:test:stateMachine:historical',
+    )
 
     response = upload_module.handler(_event(CSV), None)
     body = json.loads(response['body'])
@@ -37,6 +53,9 @@ def test_upload_writes_raw_csv_to_bronze(monkeypatch):
     assert s3.calls[0]['Bucket'] == 'test-bronze'
     assert s3.calls[0]['Key'].startswith('bronze/historical/ingested_at=')
     assert s3.calls[0]['ContentType'] == 'text/csv'
+    assert body['etl_execution_arn'].endswith('execution/test')
+    assert stepfunctions.calls[0]['stateMachineArn'].endswith('historical')
+    assert json.loads(stepfunctions.calls[0]['input'])['key'] == s3.calls[0]['Key']
 
 
 def test_upload_rejects_missing_required_column(monkeypatch):

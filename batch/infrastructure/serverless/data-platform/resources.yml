@@ -435,6 +435,8 @@ Outputs:
   IotStateMachineArn:
     Description: IoT ETL Step Functions state machine ARN
     Value: !Ref IotEtlStateMachine
+    Export:
+      Name: ${self:service}-${sls:stage}-IotStateMachineArn
   GlueDatabaseName:
     Description: Glue Data Catalog database
     Value: !Ref GlueDatabase

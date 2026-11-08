@@ -1,7 +1,10 @@
-# Frontend de prueba para publicar un CSV
+# Frontend de carga y dashboard QuickSight
 
-Esta carpeta contiene una interfaz mínima para arrastrar un CSV local hacia el
-endpoint de validación batch.
+Esta carpeta contiene una aplicación web única con dos pestañas: una para
+arrastrar un CSV local hacia el endpoint de validación batch y otra para
+embeber el dashboard publicado de QuickSight mediante una URL temporal
+generada por Lambda. Ambas se sirven desde el mismo origen HTTP y comparten la
+API Key en memoria.
 
 ## Requisitos
 
@@ -55,8 +58,40 @@ En este caso, abre directamente `http://localhost:8080`.
 4. Pulsa **Publicar CSV**.
 
 Una respuesta HTTP `202` significa que Lambda validó y guardó el CSV en S3
-Bronze. No significa que los datos ya estén en Silver o Gold; después debes
-iniciar `HistoricalEtlStateMachine` desde Step Functions.
+Bronze y creó una ejecución de `HistoricalEtlStateMachine`. El procesamiento
+continúa de forma asíncrona hacia Silver y Gold; el campo
+`etl_execution_arn` identifica la ejecución para consultar su estado en
+Step Functions.
+
+## Abrir el dashboard
+
+1. Despliega el endpoint `coffee-dashboard/embed-url` del stack batch.
+2. Ejecuta el servidor local:
+
+   ```bash
+   python3 -m http.server 8080 --bind 0.0.0.0 --directory frontend
+   ```
+
+3. Abre `http://localhost:8080/`.
+4. Introduce la API Key en el campo compartido de la parte superior. Luego,
+   en la pestaña **Dashboard**, pulsa **Cargar dashboard**.
+
+La pestaña **Publicar CSV** queda disponible en la misma página. El enlace
+antiguo `dashboard.html` redirige a `index.html#dashboard` para conservar
+compatibilidad con marcadores existentes.
+
+La página no contiene credenciales AWS ni consulta S3/Athena directamente. El
+endpoint Lambda genera una URL de sesión temporal para el usuario registrado
+de QuickSight y la API Key se usa solo en memoria.
+
+Si la página muestra un error HTTP, revisa que uses la API Key activa del stack
+`backend-batch` y que la URL termine exactamente en
+`/coffee-dashboard/embed-url`. La página agrega un parámetro anti-cache para
+evitar respuestas antiguas de API Gateway.
+
+El despliegue permite `http://localhost:8080` por defecto. QuickSight no
+acepta `http://127.0.0.1:8080` como dominio HTTP de embedding; abre la página
+usando `localhost`.
 
 ## Nota importante
 
@@ -78,4 +113,6 @@ arquitectura del backend ni la infraestructura AWS del proyecto.
 
 ## Alcance
 
-La interfaz solo prueba la carga histórica hacia API Gateway. El consumo analítico mediante Athena y QuickSight está reservado para el sprint final; no se conecta a MongoDB ni expone credenciales.
+La carga histórica y el dashboard son pestañas independientes dentro de la
+misma aplicación. El consumo usa QuickSight y no introduce MongoDB, SQS ni una
+base operativa.

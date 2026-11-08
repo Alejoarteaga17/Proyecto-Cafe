@@ -161,8 +161,8 @@ Los stacks dependen de parámetros SSM y del bucket creado por el stack
    los scripts ya están publicados en el bucket y no cambiaron, no repitas este
    paso para usar la plataforma.
 
-   Para el flujo IoT, publica también sus jobs antes de ejecutar la state
-   machine IoT:
+   Para el flujo IoT, publica también sus jobs antes de enviar eventos; la regla
+   IoT iniciará automáticamente la state machine IoT:
 
    ```powershell
    cd /app/streaming/glue
@@ -250,8 +250,8 @@ cuando ya no se necesiten los datos.
 
 Si los stacks ya existen en AWS, **no vuelvas a ejecutar el despliegue para
 cada CSV o sesión de sensores**. El despliegue es una operación de
-infraestructura; el uso diario consiste en cargar datos, ejecutar el
-procesamiento y publicar eventos.
+infraestructura; el uso diario consiste en cargar datos, dejar que la carga
+histórica inicie su procesamiento automáticamente y publicar eventos IoT.
 
 Antes de usar la plataforma, confirma que tienes las credenciales AWS, la
 misma región (`us-east-1`) y que estos stacks están en estado `CREATE_COMPLETE`
@@ -300,9 +300,10 @@ cd batch/glue
 
 La publicación actualiza `glue/job_bronze_to_silver.py`,
 `glue/job_silver_to_gold.py` y `glue/coffee-pipeline.zip` en S3. Después,
-ejecuta nuevamente `HistoricalEtlStateMachine` desde Step Functions. La próxima
-ejecución usará el código actualizado; no se necesita `serverless deploy`
-si no cambió la infraestructura.
+las nuevas cargas históricas iniciarán automáticamente
+`HistoricalEtlStateMachine`; para probar inmediatamente el cambio también
+puedes iniciar una ejecución manual. No se necesita `serverless deploy` si no
+cambió la infraestructura.
 
 ##### Caso: cambio en la infraestructura de Glue o Step Functions
 
@@ -450,7 +451,8 @@ necesario usar Postman.
    Archivos mayores requieren un flujo de carga por partes o directo a S3
    validado antes de Bronze; ese flujo no está implementado en este endpoint.
 
-3. Ejecuta la máquina `HistoricalEtlStateMachine` desde Step Functions. La carga del CSV
+3. La Lambda inicia automáticamente `HistoricalEtlStateMachine` al aceptar el CSV. La carga
+   del CSV
    no la inicia automáticamente. En la consola de AWS:
 
    - Abre **Step Functions** en `us-east-1`.

@@ -71,12 +71,16 @@ una ruta sin doble barra.
 
 Si solo cambió un Job o el código compartido, vuelve a ejecutar este comando
 para actualizar los objetos bajo `s3://<data-lake-bucket>/glue/`; no es
-necesario redesplegar todos los stacks. Después inicia una nueva ejecución de
-Step Functions. Si cambió la definición de Glue, Step Functions, Data Catalog
-o Athena, publica primero los scripts y luego redespliega el stack
-`batch/infrastructure/serverless/data-platform`.
+necesario redesplegar todos los stacks. Las nuevas cargas históricas iniciarán
+una nueva ejecución automáticamente. Si cambió la definición de Glue, Step
+Functions, Data Catalog o Athena, publica primero los scripts y luego
+redespliega el stack `batch/infrastructure/serverless/data-platform`.
 
 El flujo histórico y el flujo IoT tienen state machines separadas. Publica
 también los scripts IoT desde `streaming/glue/publish-scripts.ps1` antes de
-ejecutar la state machine IoT. No se agrega un disparador automático en esta
-etapa: ambas ejecuciones se inician manualmente y de forma independiente.
+procesarlos. La carga histórica inicia automáticamente su state machine
+después de guardar en Bronze. Para IoT, Firehose entrega continuamente a
+Bronze y la regla IoT inicia automáticamente la state machine. Ambas
+ejecuciones se mantienen independientes. Esta estrategia inicia una ejecución
+por evento; para un volumen alto debe sustituirse por una ventana batch
+controlada como parte de DataOps para evitar ejecuciones concurrentes de Glue.

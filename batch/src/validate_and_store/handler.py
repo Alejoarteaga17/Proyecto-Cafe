@@ -41,8 +41,14 @@ class _UnavailableS3Client:
 
 
 s3_client = boto3.client('s3') if boto3 else _UnavailableS3Client()
+stepfunctions_client = (
+    boto3.client('stepfunctions') if boto3 else _UnavailableS3Client()
+)
 
 BRONZE_BUCKET_NAME = os.environ.get('BRONZE_BUCKET_NAME', 'coffee-data-lake-bronze')
+HISTORICAL_STATE_MACHINE_ARN = os.environ.get(
+    'HISTORICAL_STATE_MACHINE_ARN',
+)
 MAX_FILE_BYTES = 5 * 1024 * 1024
 
 
@@ -87,13 +93,30 @@ def handler(event, context):
         Body=text.encode('utf-8'),
         ContentType='text/csv',
     )
+    execution = _start_historical_etl(report_key)
 
     return _response(
         202, {
             'message': 'Coffee historical dataset accepted',
             's3_key': report_key,
             'rows_accepted': len(rows),
+            'etl_execution_arn': execution['executionArn'],
         })
+
+
+def _start_historical_etl(s3_key):
+    if not HISTORICAL_STATE_MACHINE_ARN:
+        raise RuntimeError(
+            'HISTORICAL_STATE_MACHINE_ARN is required to start historical ETL'
+        )
+    return stepfunctions_client.start_execution(
+        stateMachineArn=HISTORICAL_STATE_MACHINE_ARN,
+        input=json.dumps({
+            'bucket': BRONZE_BUCKET_NAME,
+            'key': s3_key,
+            'source': 'historical-csv-upload',
+        }),
+    )
 
 
 def _parse_csv_rows(csv_text):
