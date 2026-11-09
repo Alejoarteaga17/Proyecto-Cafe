@@ -48,6 +48,10 @@ la state machine correspondiente. Requiere `states:StartExecution`,
 Configurar en cada GitHub environment:
 
 - Secret `AWS_DEPLOY_ROLE_ARN`, confiado mediante GitHub OIDC.
+- Secret `SERVERLESS_ACCESS_KEY`, creado en
+  <https://app.serverless.com/settings/accessKeys>. Es necesario porque
+  Serverless Framework v4 requiere autenticación en ejecuciones no
+  interactivas.
 - Variables `AWS_ACCOUNT_ID`, `QUICKSIGHT_DASHBOARD_ID` y
   `QUICKSIGHT_USER_ARN` para la configuración de QuickSight.
 - Aprobación obligatoria para `prod`.
