@@ -36,5 +36,5 @@ La suite local ejecutada en la revisión anterior terminó con `72 passed`; la
 validación del embedding y del frontend unificado se realizó por separado.
 La cobertura no se volvió a medir en esta revisión; cualquier porcentaje
 anterior debe tratarse como evidencia histórica y no como resultado de esta
-validación. La suite local se mantiene como complemento de la prueba de
+validación.  La suite local se mantiene como complemento de la prueba de
 integración AWS.
