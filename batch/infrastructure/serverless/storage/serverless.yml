@@ -27,3 +27,8 @@ custom:
       dev: ${env:DEPLOY_APP, 'coffee-cultivation'}-coffee-data-lake-${self:custom.stage}-${self:custom.developer}
       test: ${env:DEPLOY_APP, 'coffee-cultivation'}-coffee-data-lake-${self:custom.stage}
       prod: ${env:DEPLOY_APP, 'coffee-cultivation'}-coffee-data-lake-${self:custom.stage}
+  frontendBucket:
+    name:
+      dev: ${env:DEPLOY_APP, 'coffee-cultivation'}-coffee-frontend-${self:custom.stage}-${self:custom.developer}
+      test: ${env:DEPLOY_APP, 'coffee-cultivation'}-coffee-frontend-${self:custom.stage}
+      prod: ${env:DEPLOY_APP, 'coffee-cultivation'}-coffee-frontend-${self:custom.stage}

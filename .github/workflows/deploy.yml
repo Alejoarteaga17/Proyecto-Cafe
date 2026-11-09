@@ -58,6 +58,22 @@ jobs:
         working-directory: batch/infrastructure/serverless/storage
         run: serverless deploy --stage "$STAGE"
 
+      - name: Publish frontend
+        run: |
+          bucket=$(aws ssm get-parameter \
+            --name "/${DEPLOY_APP}-storage/FrontendBucketName" \
+            --query 'Parameter.Value' \
+            --output text)
+          aws s3 sync frontend "s3://${bucket}" --delete
+          distribution_id=$(aws cloudformation describe-stack-resources \
+            --stack-name "${DEPLOY_APP}-storage" \
+            --logical-resource-ids FrontendDistribution \
+            --query 'StackResources[0].PhysicalResourceId' \
+            --output text)
+          aws cloudfront create-invalidation \
+            --distribution-id "${distribution_id}" \
+            --paths '/*'
+
       - name: Deploy data platform
         working-directory: batch/infrastructure/serverless/data-platform
         run: serverless deploy --stage "$STAGE"
