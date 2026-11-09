@@ -65,6 +65,7 @@ Resources:
                   - s3:DeleteBucketTagging
                   - s3:GetBucketPolicy
                   - s3:GetBucketTagging
+                  - s3:ListTagsForResource
                   - s3:ListBucket
                   - s3:GetBucketLocation
                   - s3:PutBucketPolicy

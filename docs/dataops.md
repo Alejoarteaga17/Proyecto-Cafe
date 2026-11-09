@@ -69,7 +69,9 @@ Los cuatro stacks Serverless usan buckets S3 de artefactos por ambiente
 `us-east-1-cfn-backend-batch-*` y `us-east-1-cfn-iot-*`). El workflow ejecuta
 `scripts/dataops/bootstrap-serverless-buckets.sh` antes de desplegar; el paso
 es idempotente y crea, versiona, cifra y bloquea para acceso público los
-buckets que falten.
+buckets que falten. El rol también incluye `s3:ListTagsForResource`, que
+CloudFormation requiere al inspeccionar etiquetas de buckets durante una
+actualización.
 
 La configuración AWS ya está creada en la cuenta de desarrollo:
 
