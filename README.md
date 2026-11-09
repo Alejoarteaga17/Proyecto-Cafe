@@ -191,7 +191,7 @@ Los stacks dependen de parámetros SSM y del bucket creado por el stack
    aws s3 sync /app/frontend "s3://${bucket}" --delete
    distribution_id=$(aws cloudformation describe-stack-resources \
      --stack-name coffee-cultivation-storage \
-     --logical-resource-ids FrontendDistribution \
+     --logical-resource-id FrontendDistribution \
      --query 'StackResources[0].PhysicalResourceId' --output text)
    aws cloudfront create-invalidation \
      --distribution-id "$distribution_id" --paths '/*'
