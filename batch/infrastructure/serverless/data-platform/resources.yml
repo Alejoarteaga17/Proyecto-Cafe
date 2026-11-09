@@ -181,7 +181,13 @@ Resources:
               "BronzeToSilver": {
                 "Type": "Task",
                 "Resource": "arn:aws:states:::glue:startJobRun.sync",
-                "Parameters": {"JobName": "${BronzeJob}"},
+                "Parameters": {
+                  "JobName": "${BronzeJob}",
+                  "Arguments": {
+                    "--input_path.$": "States.Format('s3://{}/{}', $.bucket, $.input_prefix)",
+                    "--output_path.$": "States.Format('s3://{}/{}', $.bucket, $.output_prefix)"
+                  }
+                },
                 "Retry": [{"ErrorEquals": ["States.ALL"], "MaxAttempts": 2, "BackoffRate": 2, "IntervalSeconds": 30}],
                 "Next": "SilverToGold",
                 "Catch": [{"ErrorEquals": ["States.ALL"], "Next": "Failed"}]
@@ -189,7 +195,13 @@ Resources:
               "SilverToGold": {
                 "Type": "Task",
                 "Resource": "arn:aws:states:::glue:startJobRun.sync",
-                "Parameters": {"JobName": "${GoldJob}"},
+                "Parameters": {
+                  "JobName": "${GoldJob}",
+                  "Arguments": {
+                    "--input_path.$": "States.Format('s3://{}/{}', $.bucket, $.output_prefix)",
+                    "--output_path.$": "States.Format('s3://{}/{}', $.bucket, $.gold_prefix)"
+                  }
+                },
                 "Retry": [{"ErrorEquals": ["States.ALL"], "MaxAttempts": 2, "BackoffRate": 2, "IntervalSeconds": 30}],
                 "End": true,
                 "Catch": [{"ErrorEquals": ["States.ALL"], "Next": "Failed"}]
@@ -212,7 +224,13 @@ Resources:
               "IotBronzeToSilver": {
                 "Type": "Task",
                 "Resource": "arn:aws:states:::glue:startJobRun.sync",
-                "Parameters": {"JobName": "${IotBronzeJob}"},
+                "Parameters": {
+                  "JobName": "${IotBronzeJob}",
+                  "Arguments": {
+                    "--input_path.$": "States.Format('s3://{}/{}', $.bucket, $.input_prefix)",
+                    "--output_path.$": "States.Format('s3://{}/{}', $.bucket, $.output_prefix)"
+                  }
+                },
                 "Retry": [{"ErrorEquals": ["States.ALL"], "MaxAttempts": 2, "BackoffRate": 2, "IntervalSeconds": 30}],
                 "Next": "IotSilverToGold",
                 "Catch": [{"ErrorEquals": ["States.ALL"], "Next": "Failed"}]
@@ -220,7 +238,13 @@ Resources:
               "IotSilverToGold": {
                 "Type": "Task",
                 "Resource": "arn:aws:states:::glue:startJobRun.sync",
-                "Parameters": {"JobName": "${IotGoldJob}"},
+                "Parameters": {
+                  "JobName": "${IotGoldJob}",
+                  "Arguments": {
+                    "--input_path.$": "States.Format('s3://{}/{}', $.bucket, $.output_prefix)",
+                    "--output_path.$": "States.Format('s3://{}/{}', $.bucket, $.gold_prefix)"
+                  }
+                },
                 "Retry": [{"ErrorEquals": ["States.ALL"], "MaxAttempts": 2, "BackoffRate": 2, "IntervalSeconds": 30}],
                 "End": true,
                 "Catch": [{"ErrorEquals": ["States.ALL"], "Next": "Failed"}]

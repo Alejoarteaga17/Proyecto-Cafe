@@ -51,7 +51,13 @@ para una fuente Athena y datasets de `coffee_historical_gold` y
 proporcionar un principal autorizado y contar con una suscripción QuickSight.
 El contrato de visualizaciones está en
 [`docs/quicksight-dashboard-definition.json`](docs/quicksight-dashboard-definition.json).
-DataOps permanece reservado para el sprint final.
+DataOps y CI/CD están implementados para el sprint final. Los scripts de
+`scripts/dataops/` publican los cuatro jobs Glue, permiten relanzar de forma
+independiente los workflows histórico e IoT y validan el código localmente.
+Los workflows de GitHub Actions ejecutan CI en cambios y ofrecen CD/DataOps
+manuales protegidos por environments. La ejecución AWS requiere configurar
+OIDC y `AWS_DEPLOY_ROLE_ARN`; la existencia de los workflows no significa que
+se hayan ejecutado en una cuenta AWS.
 
 ### Estructura del repositorio
 
@@ -78,6 +84,8 @@ procedimiento para obtener `DataScannedInBytes` y
 implementación está verificada en código/IaC; las métricas de rendimiento
 requieren ejecutar las consultas en AWS y permanecen pendientes hasta contar
 con ese resultado.
+El diseño de automatización y sus permisos está en
+[`docs/dataops.md`](docs/dataops.md).
 
 Con esta estructura ya no quedan carpetas duplicadas ni versiones paralelas del mismo proyecto.
 
@@ -101,6 +109,31 @@ El estado detallado y la evidencia se mantienen en
 [`docs/acceptance-checklist.md`](docs/acceptance-checklist.md). Los stacks
 de los componentes excluidos de la arquitectura anterior fueron eliminados y no
 deben reintroducirse.
+
+### CI/CD y DataOps
+
+Configura en GitHub una relación OIDC entre Actions y un rol AWS con permisos
+limitados a los stacks, S3/Glue y Step Functions del proyecto. En cada
+environment (`dev`, `test`, `prod`) registra el secreto `AWS_DEPLOY_ROLE_ARN`;
+para DataOps, registra la variable `DATA_LAKE_BUCKET` o permite que el script
+la resuelva desde SSM.
+
+El rol AWS ya fue creado en la cuenta de desarrollo por el stack
+`coffee-cultivation-github-actions-oidc`:
+`arn:aws:iam::688060219062:role/coffee-cultivation-github-actions`.
+Falta registrar ese ARN en los tres environments de GitHub y exigir aprobación
+para `prod` antes de ejecutar el workflow de despliegue.
+
+- `CI` corre pruebas, compilación Python, validación HTML y YAML en cada push o
+  pull request.
+- `CD - AWS deployment` se ejecuta manualmente, con `stage`, environment y
+  concurrencia por ambiente. Despliega Storage, Data Platform, Batch API e IoT,
+  y publica los artefactos Glue.
+- `DataOps - publish and reprocess` publica ambos conjuntos de jobs o inicia
+  solo `historical` o `iot`. Nunca cruza prefijos entre workflows.
+
+Los despliegues a `prod` deben exigir aprobación del environment de GitHub.
+Revisa el cambio de CloudFormation y costos antes de autorizar el workflow.
 
 ---
 

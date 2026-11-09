@@ -114,6 +114,9 @@ def _start_historical_etl(s3_key):
         input=json.dumps({
             'bucket': BRONZE_BUCKET_NAME,
             'key': s3_key,
+            'input_prefix': 'bronze/historical/',
+            'output_prefix': 'silver/historical/',
+            'gold_prefix': 'gold/historical/',
             'source': 'historical-csv-upload',
         }),
     )

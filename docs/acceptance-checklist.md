@@ -20,7 +20,8 @@
 | RACI | COMPLETE | `docs/raci.md` |
 | Data-quality rules | COMPLETE local | Validadores históricos/IoT y pruebas locales |
 | Componentes MongoDB/SQS/DLQ/Secrets/SNS | COMPLETE | Código, stacks, fixtures y dependencias eliminados |
-| DataOps | DEFERRED TO FINAL SPRINT | README y changelog |
+| DataOps | COMPLETE in repository; AWS execution NOT VERIFIED in this review | `scripts/dataops/publish-glue.sh`, `scripts/dataops/start-etl.sh`, `.github/workflows/dataops.yml` |
+| CI/CD | PARTIAL: AWS OIDC deployed; GitHub environments and workflow execution NOT VERIFIED | `infrastructure/github-actions-oidc.yml`, stack `coffee-cultivation-github-actions-oidc` in `CREATE_COMPLETE`, `.github/workflows/ci.yml`, `.github/workflows/deploy.yml` |
 | Consumption/dashboard validation | COMPLETE in development account; replication pending | Dashboard publicado y validado con dos pestañas; replicación a otra cuenta requiere suscripción, principal y permisos |
 
 La verificación AWS registrada corresponde a una cuenta de desarrollo autorizada

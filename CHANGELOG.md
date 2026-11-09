@@ -81,3 +81,10 @@
 - QuickSight replication to another account requires a subscription, authorized
   principal and AWS permissions.
 - DataOps automation remains deferred to the final sprint.
+## Unreleased
+
+- Added GitHub Actions CI checks for Python, tests, frontend HTML and YAML.
+- Added manual OIDC-protected CD deployment for the Storage, Data Platform,
+  Batch API and IoT stacks.
+- Added DataOps scripts and workflow for Glue publication and independent
+  historical/IoT ETL reprocessing.

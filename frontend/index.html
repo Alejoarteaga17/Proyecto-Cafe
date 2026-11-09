@@ -1,8 +1,10 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-type="software">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="page-type" content="software" />
+    <meta name="site-kind" content="software" />
     <title>Cultivo de Café</title>
     <script src="https://unpkg.com/amazon-quicksight-embedding-sdk@2.10.2/dist/quicksight-embedding-js-sdk.min.js"></script>
     <style>
@@ -124,6 +126,527 @@
         .tabs { overflow-x: auto; }
         #dashboardContainer, #dashboardContainer iframe { min-height: 620px; }
       }
+
+      /* Layout visual de ancho completo */
+      :root {
+        --background: #f5f7f4;
+        --surface-soft: #f7faf7;
+        --primary: #2f6b43;
+        --primary-dark: #214f31;
+        --accent: #c98b45;
+        --border: #dce5dc;
+        --focus: rgba(47, 107, 67, 0.18);
+      }
+      body {
+        min-height: 100vh;
+        padding: 0;
+        background:
+          radial-gradient(circle at 90% 0%, rgba(201, 139, 69, 0.12), transparent 30rem),
+          var(--background);
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+      main { width: 100%; margin: 0; }
+      .header {
+        padding: 42px clamp(20px, 5vw, 72px) 30px;
+        background: linear-gradient(135deg, #1d4d2b 0%, #39784d 100%);
+        color: #fff;
+      }
+      .header h1 { margin-bottom: 10px; color: #fff; font-size: clamp(2rem, 4vw, 3.25rem); letter-spacing: -0.04em; }
+      .header .intro { max-width: 720px; color: #dcebdd; font-size: 1.05rem; }
+      .tabs {
+        gap: 0;
+        margin: 0;
+        padding: 0 clamp(12px, 5vw, 72px);
+        border: 0;
+        background: #fff;
+        box-shadow: 0 4px 18px rgba(28, 43, 32, 0.08);
+      }
+      .tab {
+        position: relative;
+        flex: 1;
+        min-height: 64px;
+        padding: 14px 20px;
+        border-radius: 0;
+        background: transparent;
+        color: var(--muted);
+        font-size: 0.98rem;
+        transition: color 160ms ease, background 160ms ease;
+      }
+      .tab:hover { background: var(--surface-soft); color: var(--primary-dark); }
+      .tab.active { background: transparent; color: var(--primary); }
+      .tab.active::after {
+        position: absolute;
+        right: 18%;
+        bottom: 0;
+        left: 18%;
+        height: 4px;
+        border-radius: 4px 4px 0 0;
+        background: var(--accent);
+        content: "";
+      }
+      .access-card,
+      .panel { margin: 0; padding: 28px clamp(20px, 5vw, 72px); }
+      .access-card { background: #fff; border: 0; border-radius: 0; box-shadow: none; }
+      .access-card label { margin-top: 0; }
+      .panel { display: none; }
+      .panel.active { display: block; }
+      .card {
+        width: 100%;
+        padding: clamp(22px, 3vw, 36px);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        background: rgba(255, 255, 255, 0.94);
+        box-shadow: 0 12px 35px rgba(28, 43, 32, 0.07);
+      }
+      .panel > .card:first-child { min-height: 300px; }
+      .panel h2 { margin-bottom: 8px; font-size: clamp(1.35rem, 2vw, 1.75rem); }
+      label { margin-top: 20px; color: var(--primary-dark); font-size: 0.86rem; letter-spacing: 0.01em; }
+      input {
+        min-height: 48px;
+        padding: 12px 14px;
+        border: 1px solid #c9d6ca;
+        border-radius: 10px;
+        background: #fff;
+        transition: border-color 160ms ease, box-shadow 160ms ease;
+      }
+      input:focus {
+        outline: 0;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 4px var(--focus);
+      }
+      .form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0 22px;
+      }
+      .form-grid > label { grid-column: span 1; }
+      .form-grid > input { margin-bottom: 2px; }
+      .full-field { grid-column: 1 / -1; }
+      .full-field + input { grid-column: 1 / -1; }
+      .drop-zone {
+        min-height: 150px;
+        justify-content: center;
+        border-color: #a9c5ad;
+        border-radius: 14px;
+        background: var(--surface-soft);
+        transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
+      }
+      .drop-zone:hover { border-color: var(--primary); background: #eef7ef; transform: translateY(-1px); }
+      .actions { margin-top: 26px; }
+      button {
+        min-height: 46px;
+        padding: 12px 20px;
+        border-radius: 10px;
+        background: var(--primary);
+        box-shadow: 0 5px 12px rgba(47, 107, 67, 0.18);
+        transition: background 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+      }
+      button:hover { background: var(--primary-dark); transform: translateY(-1px); box-shadow: 0 7px 16px rgba(47, 107, 67, 0.24); }
+      button:focus-visible, .drop-zone:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+      .status { margin-top: 18px; }
+      .warning { border-radius: 10px; border-left-width: 4px; }
+      .dashboard-controls, .simulation-controls { max-width: none; }
+      #dashboardContainer {
+        min-height: 760px;
+        margin-top: 24px;
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        background: #fff;
+      }
+      @media (max-width: 720px) {
+        .header { padding-top: 30px; }
+        .tabs { padding: 0 8px; }
+        .tab { min-width: 120px; padding: 12px 8px; font-size: 0.86rem; }
+        .access-card, .panel { padding: 20px 14px; }
+        .form-grid { grid-template-columns: 1fr; gap: 0; }
+        .form-grid > label, .full-field, .full-field + input { grid-column: 1; }
+      }
+
+      .dashboard-mode {
+        --background: #eef3ef;
+      }
+      .dashboard-mode .header {
+        padding-top: 26px;
+        padding-bottom: 22px;
+      }
+      .dashboard-mode .header h1 { font-size: clamp(1.7rem, 3vw, 2.5rem); }
+      .dashboard-mode .header .intro { font-size: 0.95rem; }
+      .dashboard-mode .access-card {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        padding-top: 14px;
+        padding-bottom: 14px;
+      }
+      .dashboard-mode .access-card label { flex: 0 0 auto; margin: 0; }
+      .dashboard-mode .access-card input { max-width: 520px; min-height: 42px; }
+      .dashboard-mode .access-card .intro { display: none; }
+      .dashboard-mode #dashboard.panel { padding-top: 18px; }
+      .dashboard-mode #dashboardContainer {
+        height: calc(100vh - 286px);
+        min-height: 760px;
+        margin-top: 18px;
+        border-color: #cbd9ce;
+        border-radius: 16px;
+        box-shadow: 0 16px 40px rgba(28, 43, 32, 0.12);
+      }
+      .dashboard-mode #dashboardContainer iframe {
+        display: block;
+        width: 100%;
+        height: 100%;
+        min-height: 760px;
+      }
+      .dashboard-mode #dashboard .card:first-child {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 6px 24px;
+        padding: 18px 24px;
+        min-height: 0;
+      }
+      .dashboard-mode #dashboard .card:first-child h2,
+      .dashboard-mode #dashboard .card:first-child .intro { grid-column: 1; }
+      .dashboard-mode #dashboard .card:first-child h2 { margin: 0; }
+      .dashboard-mode #dashboard .card:first-child .intro { grid-row: 2; }
+      .dashboard-mode #dashboard .form-grid { grid-column: 2; grid-row: 1 / span 2; display: flex; align-items: center; gap: 12px; }
+      .dashboard-mode #dashboard .form-grid label { margin: 0; white-space: nowrap; }
+      .dashboard-mode #dashboard .form-grid input { width: min(38vw, 520px); }
+      .dashboard-mode #dashboard .actions { grid-column: 3; grid-row: 1 / span 2; margin: 0; }
+      .dashboard-mode #dashboard .status,
+      .dashboard-mode #dashboard .warning { grid-column: 1 / -1; margin: 8px 0 0; }
+      @media (max-width: 720px) {
+        .dashboard-mode .access-card { display: block; }
+        .dashboard-mode .access-card label { display: block; margin-bottom: 6px; }
+        .dashboard-mode #dashboardContainer { height: calc(100vh - 390px); min-height: 620px; }
+        .dashboard-mode #dashboard .card:first-child { display: block; padding: 20px; }
+        .dashboard-mode #dashboard .form-grid { display: block; }
+        .dashboard-mode #dashboard .form-grid input { width: 100%; }
+        .dashboard-mode #dashboard .actions { margin-top: 16px; }
+      }
+
+      /* Taste: sistema visual de producto, claro, editorial y consistente */
+      :root {
+        --ink: #14251a;
+        --ink-soft: #486151;
+        --line: #d7e2d9;
+        --cream: #fbfcf9;
+        --coffee: #a96836;
+      }
+      body {
+        color: var(--ink);
+        background-color: var(--cream);
+        background-image: radial-gradient(circle at 8% 18%, rgba(201, 139, 69, 0.08), transparent 25rem);
+      }
+      .header {
+        position: relative;
+        overflow: hidden;
+        padding-top: clamp(52px, 8vw, 112px);
+        padding-bottom: clamp(38px, 5vw, 72px);
+        background: #193d27;
+      }
+      .header::after {
+        position: absolute;
+        right: 7vw;
+        bottom: -7rem;
+        width: 18rem;
+        height: 18rem;
+        border: 1px solid rgba(226, 190, 139, 0.28);
+        border-radius: 50%;
+        content: "";
+      }
+      .header h1,
+      .header .intro {
+        position: relative;
+        z-index: 1;
+      }
+      .header h1 {
+        max-width: 760px;
+        font-weight: 750;
+        letter-spacing: -0.055em;
+      }
+      .header .intro { max-width: 600px; }
+      .tabs {
+        position: sticky;
+        z-index: 5;
+        top: 0;
+        border-bottom: 1px solid var(--line);
+      }
+      .tab {
+        font-size: 0.9rem;
+        letter-spacing: 0.015em;
+        text-transform: uppercase;
+      }
+      .tab::before {
+        display: block;
+        margin-bottom: 3px;
+        color: var(--coffee);
+        content: attr(data-tab);
+        font-size: 0.62rem;
+        font-weight: 800;
+        letter-spacing: 0.13em;
+        opacity: 0.8;
+      }
+      .tab.active { font-weight: 800; }
+      .access-card {
+        border-bottom: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.72);
+      }
+      .card {
+        border-color: var(--line);
+        background: rgba(255, 255, 255, 0.96);
+        box-shadow: 0 18px 45px rgba(20, 37, 26, 0.06);
+      }
+      .card h2 { letter-spacing: -0.035em; }
+      input {
+        border-color: #bdcfc1;
+        border-radius: 999px;
+        color: var(--ink);
+      }
+      input::placeholder { color: #8a9b8e; }
+      button {
+        position: relative;
+        overflow: hidden;
+        border-radius: 999px;
+        letter-spacing: 0.01em;
+      }
+      .tab { border-radius: 999px; }
+      button:active { transform: translateY(1px); }
+      .drop-zone strong { letter-spacing: -0.01em; }
+      .drop-zone small { color: var(--coffee); font-weight: 700; }
+      .warning {
+        border-left-color: var(--coffee);
+        background: #fffaf3;
+      }
+      #dashboardContainer {
+        background: #f3f6f3;
+        box-shadow: 0 20px 55px rgba(20, 37, 26, 0.14);
+      }
+      .dashboard-mode #dashboardContainer {
+        height: calc(100dvh - 286px);
+        min-height: 620px;
+      }
+      .dashboard-mode #dashboardContainer iframe {
+        min-height: 620px;
+      }
+      @media (prefers-reduced-motion: no-preference) {
+        .header h1 { animation: taste-enter 520ms ease-out both; }
+        .header .intro { animation: taste-enter 620ms 80ms ease-out both; }
+        .card { animation: taste-enter 500ms 100ms ease-out both; }
+      }
+      @keyframes taste-enter {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      /* Composición inspirada en la referencia visual */
+      body {
+        padding: 0 16px 48px;
+        background: #f5eee6;
+      }
+      main {
+        width: min(920px, 100%);
+        margin: 0 auto;
+      }
+      .header {
+        width: 100vw;
+        margin-left: 50%;
+        padding: 20px 16px 72px;
+        transform: translateX(-50%);
+        background:
+          linear-gradient(90deg, rgba(8, 54, 29, 0.98) 0%, rgba(10, 64, 34, 0.84) 48%, rgba(6, 43, 24, 0.42) 100%),
+          url("https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=2400&q=85") center 42% / cover;
+      }
+      .header::after { display: none; }
+      .header h1,
+      .header .intro {
+        width: min(920px, 100%);
+        margin-right: auto;
+        margin-left: auto;
+      }
+      .header h1 {
+        padding-top: 4px;
+        font-size: clamp(1.7rem, 3.2vw, 2.45rem);
+        letter-spacing: -0.045em;
+      }
+      .header .intro {
+        color: #e7f2e8;
+        font-size: clamp(0.98rem, 2vw, 1.15rem);
+      }
+      .tabs {
+        position: relative;
+        z-index: 2;
+        width: calc(100% - 32px);
+        margin: -38px auto 20px;
+        padding: 7px;
+        border: 1px solid rgba(212, 224, 214, 0.7);
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.94);
+        box-shadow: 0 12px 26px rgba(34, 48, 37, 0.14);
+      }
+      .tab {
+        min-height: 48px;
+        padding: 8px 14px;
+        border-radius: 12px;
+        font-size: 0.88rem;
+        text-transform: none;
+      }
+      .tab::before {
+        display: inline;
+        margin: 0 7px 0 0;
+        font-size: 1.1rem;
+        letter-spacing: 0;
+        vertical-align: -1px;
+      }
+      .tab[data-tab="upload"]::before { content: "↥"; }
+      .tab[data-tab="simulation"]::before { content: "⌁"; }
+      .tab[data-tab="dashboard"]::before { content: "▥"; }
+      .tab.active {
+        background: #eaf3e9;
+        color: var(--primary-dark);
+      }
+      .tab.active::after {
+        right: 12px;
+        bottom: -7px;
+        left: 12px;
+        height: 3px;
+        background: #d7783f;
+      }
+      .access-card,
+      .panel { padding: 0; }
+      .access-card {
+        display: grid;
+        grid-template-columns: 220px minmax(0, 1fr);
+        align-items: center;
+        gap: 8px 18px;
+        margin-bottom: 20px;
+        padding: 18px 22px;
+        border: 1px solid #e6ddd4;
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.94);
+        box-shadow: 0 10px 24px rgba(66, 50, 37, 0.08);
+      }
+      .access-card label {
+        margin: 0;
+        color: var(--ink);
+        font-size: 1.05rem;
+      }
+      .access-card input { grid-column: 2; grid-row: 1; min-height: 40px; }
+      .access-card .intro { grid-column: 2; grid-row: 2; font-size: 0.78rem; }
+      .card {
+        padding: clamp(24px, 4vw, 32px);
+        border-color: #e6ddd4;
+        border-radius: 16px;
+        box-shadow: 0 12px 28px rgba(66, 50, 37, 0.09);
+      }
+      .panel > .card:first-child { min-height: 0; }
+      .panel h2 {
+        margin-bottom: 4px;
+        font-size: clamp(1.45rem, 3vw, 1.85rem);
+      }
+      .panel h2::before {
+        display: inline-flex;
+        width: 38px;
+        height: 38px;
+        align-items: center;
+        justify-content: center;
+        margin-right: 12px;
+        border-radius: 12px;
+        background: #e9f2e6;
+        color: var(--primary-dark);
+        content: "↥";
+        font-size: 1.7rem;
+        vertical-align: -5px;
+      }
+      #simulation h2::before { content: "⌁"; }
+      #dashboard h2::before { content: "▥"; }
+      .drop-zone {
+        min-height: 184px;
+        margin-top: 18px;
+        border: 2px dashed #639267;
+        border-radius: 14px;
+        background: #f4faef;
+      }
+      .drop-zone strong { font-size: 1.15rem; }
+      .drop-zone span { font-size: 0.86rem; }
+      .drop-zone small { margin-top: 2px; }
+      .drop-zone button {
+        min-height: 38px;
+        padding: 8px 18px;
+        border: 1px solid var(--primary);
+        background: transparent;
+        color: var(--primary-dark);
+        box-shadow: none;
+      }
+      .drop-zone button:hover { background: #e8f3e7; color: var(--primary-dark); }
+      .form-grid { margin-top: 16px; }
+      .actions {
+        display: flex;
+        justify-content: flex-end;
+        padding-top: 18px;
+        border-top: 1px solid #eee5dc;
+      }
+      .actions button { min-width: 178px; }
+      #uploadResponse { margin-bottom: 0; }
+      #dashboardContainer { border-radius: 16px; }
+      @media (max-width: 720px) {
+        body { padding: 0 10px 28px; }
+        .header { padding-bottom: 62px; }
+        .tabs { width: calc(100% - 12px); }
+        .tab { min-width: 0; padding: 8px 5px; font-size: 0.76rem; }
+        .tab::before { display: block; margin: 0 0 2px; font-size: 1rem; }
+        .access-card { display: block; padding: 18px; }
+        .access-card input { margin-top: 8px; }
+        .access-card .intro { margin-top: 7px; }
+        .actions button { width: 100%; }
+      }
+
+      /* El panel del dashboard usa una lectura lineal para no comprimir el título. */
+      .dashboard-mode #dashboard .dashboard-controls {
+        display: block;
+        padding: 24px 28px;
+      }
+      .dashboard-mode #dashboard .dashboard-controls h2 {
+        display: flex;
+        align-items: center;
+        margin: 0;
+        font-size: clamp(1.35rem, 3vw, 1.85rem);
+      }
+      .dashboard-mode #dashboard .dashboard-controls > .intro {
+        margin: 8px 0 18px 50px;
+      }
+      .dashboard-mode #dashboard .dashboard-controls .form-grid {
+        display: block;
+        margin: 0;
+      }
+      .dashboard-mode #dashboard .dashboard-controls .form-grid label {
+        display: block;
+        margin: 0 0 6px;
+      }
+      .dashboard-mode #dashboard .dashboard-controls .form-grid input {
+        display: block;
+        width: 100%;
+        min-height: 44px;
+      }
+      .dashboard-mode #dashboard .dashboard-controls .actions {
+        display: flex;
+        margin-top: 16px;
+        padding-top: 16px;
+      }
+      .dashboard-mode #dashboard .dashboard-controls .status,
+      .dashboard-mode #dashboard .dashboard-controls .warning {
+        margin-top: 12px;
+      }
+      @media (max-width: 720px) {
+        .dashboard-mode #dashboard .dashboard-controls {
+          padding: 20px;
+        }
+        .dashboard-mode #dashboard .dashboard-controls > .intro {
+          margin-left: 0;
+        }
+        .dashboard-mode #dashboard .dashboard-controls h2 {
+          align-items: flex-start;
+        }
+      }
     </style>
   </head>
   <body>
@@ -153,11 +676,14 @@
           <div id="dropZone" class="drop-zone" role="button" tabindex="0" aria-controls="csvFile">
             <strong>Arrastra y suelta tu CSV aquí</strong>
             <span>o haz clic para seleccionarlo desde tu equipo</span>
+            <button id="chooseFileButton" type="button">Seleccionar archivo</button>
             <small id="selectedFile">Ningún archivo seleccionado</small>
           </div>
           <input id="csvFile" type="file" accept=".csv,text/csv" hidden />
-          <label for="uploadApiUrl">URL de API Gateway</label>
-          <input id="uploadApiUrl" type="url" value="https://iwmkiead9h.execute-api.us-east-1.amazonaws.com/dev/coffee-historical-data" autocomplete="url" />
+          <div class="form-grid">
+            <label class="full-field" for="uploadApiUrl">URL de API Gateway</label>
+            <input id="uploadApiUrl" class="full-field" type="url" value="https://iwmkiead9h.execute-api.us-east-1.amazonaws.com/dev/coffee-historical-data" autocomplete="url" />
+          </div>
           <div class="actions">
             <button id="publishButton" type="button">Publicar CSV</button>
           </div>
@@ -170,14 +696,17 @@
         <div class="card simulation-controls">
           <h2>Generar simulación IoT</h2>
           <p class="intro">Genera lecturas y publícalas en AWS IoT Core usando el mismo flujo del simulador de terminal.</p>
-          <label for="simulationApiUrl">Endpoint de simulación</label>
-          <input id="simulationApiUrl" type="url" value="https://iwmkiead9h.execute-api.us-east-1.amazonaws.com/dev/coffee-iot/simulate" autocomplete="url" />
-          <label for="simulationCount">Cantidad de eventos</label>
-          <input id="simulationCount" type="number" min="1" max="100" value="3" />
-          <label for="simulationInterval">Intervalo entre eventos (segundos)</label>
-          <input id="simulationInterval" type="number" min="0" max="60" step="0.1" value="2" />
-          <label for="simulationSeed">Semilla (opcional)</label>
-          <input id="simulationSeed" type="number" placeholder="Reproducibilidad opcional" />
+          <div class="form-grid">
+            <label class="full-field" for="simulationApiUrl">Endpoint de simulación</label>
+            <input id="simulationApiUrl" class="full-field" type="url" value="https://iwmkiead9h.execute-api.us-east-1.amazonaws.com/dev/coffee-iot/simulate" autocomplete="url" />
+            <label for="simulationCount">Cantidad de eventos</label>
+            <label for="simulationInterval">Intervalo entre eventos (segundos)</label>
+            <input id="simulationCount" type="number" min="1" max="100" value="3" />
+            <input id="simulationInterval" type="number" min="0" max="60" step="0.1" value="2" />
+            <label for="simulationSeed">Semilla (opcional)</label>
+            <span></span>
+            <input id="simulationSeed" type="number" placeholder="Reproducibilidad opcional" />
+          </div>
           <div class="actions">
             <button id="simulateButton" type="button">Iniciar simulación</button>
           </div>
@@ -192,8 +721,10 @@
         <div class="card dashboard-controls">
           <h2>Dashboard de Cultivo de Café</h2>
           <p class="intro">Datos Gold históricos y telemetría IoT en QuickSight.</p>
-          <label for="embedApiUrl">Endpoint de embedding</label>
-          <input id="embedApiUrl" type="url" value="https://iwmkiead9h.execute-api.us-east-1.amazonaws.com/dev/coffee-dashboard/embed-url" autocomplete="url" />
+          <div class="form-grid">
+            <label class="full-field" for="embedApiUrl">Endpoint de embedding</label>
+            <input id="embedApiUrl" class="full-field" type="url" value="https://iwmkiead9h.execute-api.us-east-1.amazonaws.com/dev/coffee-dashboard/embed-url" autocomplete="url" />
+          </div>
           <div class="actions">
             <button id="loadButton" type="button">Cargar dashboard</button>
           </div>
@@ -212,6 +743,7 @@
       const panels = document.querySelectorAll('.panel');
       const csvFileInput = document.getElementById('csvFile');
       const dropZone = document.getElementById('dropZone');
+      const chooseFileButton = document.getElementById('chooseFileButton');
       const selectedFileBox = document.getElementById('selectedFile');
       const publishButton = document.getElementById('publishButton');
       const uploadApiUrlInput = document.getElementById('uploadApiUrl');
@@ -237,6 +769,7 @@
       function showTab(name, updateHash = true) {
         tabs.forEach((tab) => tab.classList.toggle('active', tab.dataset.tab === name));
         panels.forEach((panel) => panel.classList.toggle('active', panel.id === name));
+        document.body.classList.toggle('dashboard-mode', name === 'dashboard');
         if (updateHash) history.replaceState(null, '', `#${name}`);
       }
 
@@ -378,8 +911,13 @@
           try { body = JSON.parse(text); } catch { throw new Error(`El endpoint devolvió una respuesta no válida (HTTP ${response.status}).`); }
           if (!response.ok || !body.embedUrl) throw new Error(body.message || `No se pudo generar la URL (HTTP ${response.status}).`);
           const context = await window.QuickSightEmbedding.createEmbeddingContext();
+          const dashboardHeight = Math.max(window.innerHeight - 286, 620);
           await context.embedDashboard({
-            url: body.embedUrl, container: dashboardContainer, height: '760px', width: '100%', scrolling: 'no',
+            url: body.embedUrl,
+            container: dashboardContainer,
+            height: `${dashboardHeight}px`,
+            width: '100%',
+            scrolling: 'no',
           }, {
             locale: 'es-ES',
             onMessage: (event) => {
@@ -395,6 +933,10 @@
       }
 
       csvFileInput.addEventListener('change', () => selectFile(csvFileInput.files[0]));
+      chooseFileButton.addEventListener('click', (event) => {
+        event.stopPropagation();
+        csvFileInput.click();
+      });
       dropZone.addEventListener('click', () => csvFileInput.click());
       dropZone.addEventListener('keydown', (event) => {
         if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); csvFileInput.click(); }
