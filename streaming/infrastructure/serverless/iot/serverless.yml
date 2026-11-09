@@ -7,6 +7,8 @@ provider:
   stage: dev
   region: us-east-1
   stackName: ${self:custom.stackName.${self:custom.stage}}
+  deploymentBucket:
+    name: ${self:custom.s3.deploymentBucketName.${self:custom.stage}}
 resources:
   - ${file(iot.yml)}
   - ${file(parameters.yml)}

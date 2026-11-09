@@ -89,10 +89,9 @@ jobs:
         id: deployment
         run: |
           storage_stack="${DEPLOY_APP}-storage"
-          platform_stack="${DEPLOY_APP}-data-platform"
+          platform_stack="data-platform-${STAGE}"
           if [[ "$STAGE" != "dev" ]]; then
             storage_stack="${storage_stack}-${STAGE}"
-            platform_stack="${platform_stack}-${STAGE}"
           fi
           domain=$(aws ssm get-parameter \
             --name "/${storage_stack}/FrontendDistributionDomainName" \
@@ -131,7 +130,7 @@ jobs:
             --output text)
           api_id=$(aws cloudformation describe-stack-resources \
             --stack-name "$api_stack" \
-            --logical-resource-ids ApiGatewayRestApi \
+            --logical-resource-id ApiGatewayRestApi \
             --query 'StackResources[0].PhysicalResourceId' \
             --output text)
           api_base_url="https://${api_id}.execute-api.${AWS_REGION}.amazonaws.com/${STAGE}"
@@ -140,7 +139,7 @@ jobs:
           aws s3 sync frontend "s3://${bucket}" --delete
           distribution_id=$(aws cloudformation describe-stack-resources \
             --stack-name "$storage_stack" \
-            --logical-resource-ids FrontendDistribution \
+            --logical-resource-id FrontendDistribution \
             --query 'StackResources[0].PhysicalResourceId' \
             --output text)
           aws cloudfront create-invalidation \

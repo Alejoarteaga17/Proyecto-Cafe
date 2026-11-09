@@ -1,6 +1,8 @@
 Resources:
   DataLakeBucket:
     Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     Properties:
       BucketName: ${self:custom.dataLakeBucket.name.${self:custom.stage}}
       VersioningConfiguration:
@@ -31,6 +33,8 @@ Resources:
 
   FrontendBucket:
     Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     Properties:
       BucketName: ${self:custom.frontendBucket.name.${self:custom.stage}}
       VersioningConfiguration:

@@ -16,6 +16,10 @@ def test_iot_infrastructure_keeps_sensor_topics_explicit():
     assert 'StepFunctions:' in template
     assert 'states:StartExecution' in template
     assert 'data-platform-${self:custom.stage}-IotStateMachineArn' in template
+    assert 'Input:' not in template
+    assert "'bronze/iot/' AS input_prefix" in template
+    assert "'silver/iot/' AS output_prefix" in template
+    assert "'gold/iot/' AS gold_prefix" in template
 
 
 def test_iot_glue_jobs_use_year_month_partitions_and_separate_paths():

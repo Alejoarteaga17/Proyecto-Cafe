@@ -9,6 +9,8 @@ provider:
   runtime: python3.13
   architecture: arm64
   stackName: ${self:custom.stackName.${self:custom.stage}}
+  deploymentBucket:
+    name: ${self:custom.s3.deploymentBucketName.${self:custom.stage}}
   apiGateway:
     apiKeys:
       - ${self:custom.servicePrefix.${self:custom.stage}}-key
