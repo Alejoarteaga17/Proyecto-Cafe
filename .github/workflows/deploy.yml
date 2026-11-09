@@ -62,6 +62,9 @@ jobs:
       - name: Run validation gate
         run: bash scripts/dataops/validate.sh
 
+      - name: Bootstrap Serverless artifact buckets
+        run: bash scripts/dataops/bootstrap-serverless-buckets.sh "$STAGE"
+
       - name: Deploy storage
         working-directory: batch/infrastructure/serverless/storage
         run: serverless deploy --stage "$STAGE"
