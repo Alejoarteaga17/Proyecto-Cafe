@@ -72,7 +72,7 @@ Resources:
         # The policy limits publication to the four simulator sensor topics.
         # The payload itself carries no sensor_id, so the topic remains the
         # authoritative source for the derived identity.
-        Sql: "SELECT *, topic(3) AS sensor_id FROM 'sensors/coffee/+/data'"
+        Sql: "SELECT *, topic(3) AS sensor_id, '${self:custom.s3.dataLakeBucket.name}' AS bucket, 'bronze/iot/' AS input_prefix, 'silver/iot/' AS output_prefix, 'gold/iot/' AS gold_prefix, 'iot-topic-rule' AS source FROM 'sensors/coffee/+/data'"
         AwsIotSqlVersion: '2016-03-23'
         RuleDisabled: false
         Actions:
@@ -88,7 +88,6 @@ Resources:
                       - ':'
                       - Fn::ImportValue: data-platform-${self:custom.stage}-IotStateMachineArn
               RoleArn: !GetAtt SensorReadingsTopicRuleRole.Arn
-              Input: !Sub '{"bucket":"${self:custom.s3.dataLakeBucket.name}","input_prefix":"bronze/iot/","output_prefix":"silver/iot/","gold_prefix":"gold/iot/","source":"iot-topic-rule"}'
 
   SensorFirehose:
     Type: AWS::KinesisFirehose::DeliveryStream
