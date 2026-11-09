@@ -203,7 +203,9 @@ Los stacks dependen de parámetros SSM y del bucket creado por el stack
    ```
 
    El workflow `CD - AWS deployment` ejecuta automáticamente la publicación y
-   la invalidación de CloudFront después de desplegar el stack `storage`.
+   la invalidación de CloudFront después de desplegar la API. Para `dev` se
+   conservan los nombres históricos de los stacks; `test` y `prod` usan el
+   sufijo del stage (`coffee-cultivation-storage-test`, por ejemplo).
 
 2. **Publicar los scripts y el código compartido de Glue** en el bucket
    creado en el paso anterior. Sustituye `<data-lake-bucket>` por el nombre
@@ -268,6 +270,13 @@ Los stacks dependen de parámetros SSM y del bucket creado por el stack
    serverless print --stage dev
    serverless deploy --stage dev
    ```
+
+En CI/CD, el workflow obtiene el dominio CloudFront, el ARN de
+`HistoricalEtlStateMachine` y el identificador de API Gateway después de crear
+los stacks. Genera `frontend/config.js` para el stage seleccionado, configura
+`QUICKSIGHT_ALLOWED_DOMAINS` con el dominio HTTPS de CloudFront y publica el
+frontend al final del flujo. No se deben guardar API Keys ni credenciales AWS
+en el repositorio.
 
 Después del despliegue, ejecuta el simulador según la guía de
 [`streaming/README.md`](streaming/README.md). El modo `--publish` usa las

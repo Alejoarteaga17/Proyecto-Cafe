@@ -6,6 +6,7 @@
     <meta name="page-type" content="software" />
     <meta name="site-kind" content="software" />
     <title>Cultivo de Café</title>
+    <script src="config.js"></script>
     <script src="https://unpkg.com/amazon-quicksight-embedding-sdk@2.10.2/dist/quicksight-embedding-js-sdk.min.js"></script>
     <style>
       /* Layout visual de ancho completo */
@@ -642,6 +643,12 @@
       const dashboardStatus = document.getElementById('dashboardStatus');
       const dashboardContainer = document.getElementById('dashboardContainer');
       const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
+      const apiBaseUrl = (window.COFFEE_CONFIG?.apiBaseUrl || '').replace(/\/+$/, '');
+      if (apiBaseUrl) {
+        uploadApiUrlInput.value = `${apiBaseUrl}/coffee-historical-data`;
+        simulationApiUrlInput.value = `${apiBaseUrl}/coffee-iot/simulate`;
+        embedApiUrlInput.value = `${apiBaseUrl}/coffee-dashboard/embed-url`;
+      }
 
       function setStatus(element, message, type = '') {
         element.textContent = message;

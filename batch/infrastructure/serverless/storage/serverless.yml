@@ -6,7 +6,7 @@ provider:
   name: aws
   stage: dev
   region: us-east-1
-  stackName: ${env:DEPLOY_APP, 'coffee-cultivation'}-${self:service}
+  stackName: ${self:custom.stackName.${self:custom.stage}}
   deploymentBucket:
     name: ${self:custom.s3.deploymentBucketName.${self:custom.stage}}
 
@@ -15,6 +15,10 @@ resources:
 
 custom:
   stage: ${opt:stage, self:provider.stage}
+  stackName:
+    dev: ${env:DEPLOY_APP, 'coffee-cultivation'}-${self:service}
+    test: ${env:DEPLOY_APP, 'coffee-cultivation'}-${self:service}-test
+    prod: ${env:DEPLOY_APP, 'coffee-cultivation'}-${self:service}-prod
   servicePrefix: ${env:DEPLOY_APP, 'coffee-cultivation'}-${self:service}
   developer: ${env:DEVELOPER, 'aaccode'}
   s3:

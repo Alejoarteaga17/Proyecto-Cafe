@@ -5,9 +5,13 @@ stage="${1:-dev}"
 region="${AWS_REGION:-us-east-1}"
 app="${DEPLOY_APP:-coffee-cultivation}"
 prefix="${GLUE_SCRIPT_PREFIX:-glue}"
+storage_stack="${app}-storage"
+if [[ "$stage" != "dev" ]]; then
+  storage_stack="${storage_stack}-${stage}"
+fi
 
 bucket="$(aws ssm get-parameter \
-  --name "/${app}-storage/DataLakeBucketName" \
+  --name "/${storage_stack}/DataLakeBucketName" \
   --region "$region" \
   --query 'Parameter.Value' \
   --output text)"

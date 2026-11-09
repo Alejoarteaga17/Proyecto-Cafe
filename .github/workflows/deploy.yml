@@ -58,22 +58,6 @@ jobs:
         working-directory: batch/infrastructure/serverless/storage
         run: serverless deploy --stage "$STAGE"
 
-      - name: Publish frontend
-        run: |
-          bucket=$(aws ssm get-parameter \
-            --name "/${DEPLOY_APP}-storage/FrontendBucketName" \
-            --query 'Parameter.Value' \
-            --output text)
-          aws s3 sync frontend "s3://${bucket}" --delete
-          distribution_id=$(aws cloudformation describe-stack-resources \
-            --stack-name "${DEPLOY_APP}-storage" \
-            --logical-resource-ids FrontendDistribution \
-            --query 'StackResources[0].PhysicalResourceId' \
-            --output text)
-          aws cloudfront create-invalidation \
-            --distribution-id "${distribution_id}" \
-            --paths '/*'
-
       - name: Deploy data platform
         working-directory: batch/infrastructure/serverless/data-platform
         run: serverless deploy --stage "$STAGE"
@@ -81,10 +65,64 @@ jobs:
       - name: Publish Glue artifacts
         run: bash scripts/dataops/publish-glue.sh "$STAGE"
 
+      - name: Resolve deployment outputs
+        id: deployment
+        run: |
+          storage_stack="${DEPLOY_APP}-storage"
+          platform_stack="${DEPLOY_APP}-data-platform"
+          if [[ "$STAGE" != "dev" ]]; then
+            storage_stack="${storage_stack}-${STAGE}"
+            platform_stack="${platform_stack}-${STAGE}"
+          fi
+          domain=$(aws ssm get-parameter \
+            --name "/${storage_stack}/FrontendDistributionDomainName" \
+            --query 'Parameter.Value' \
+            --output text)
+          historical_arn=$(aws cloudformation describe-stacks \
+            --stack-name "$platform_stack" \
+            --query "Stacks[0].Outputs[?OutputKey=='HistoricalStateMachineArn'].OutputValue | [0]" \
+            --output text)
+          echo "frontend_domain=${domain}" >> "$GITHUB_OUTPUT"
+          echo "historical_arn=${historical_arn}" >> "$GITHUB_OUTPUT"
+
       - name: Deploy batch API
         working-directory: batch/serverless
+        env:
+          QUICKSIGHT_ALLOWED_DOMAINS: https://${{ steps.deployment.outputs.frontend_domain }}
+          HISTORICAL_STATE_MACHINE_ARN: ${{ steps.deployment.outputs.historical_arn }}
         run: serverless deploy --stage "$STAGE"
 
       - name: Deploy IoT ingestion
         working-directory: streaming/infrastructure/serverless/iot
         run: serverless deploy --stage "$STAGE"
+
+      - name: Publish frontend
+        run: |
+          storage_stack="${DEPLOY_APP}-storage"
+          api_stack="${DEPLOY_APP}-backend-batch"
+          if [[ "$STAGE" != "dev" ]]; then
+            storage_stack="${storage_stack}-${STAGE}"
+            api_stack="${api_stack}-${STAGE}"
+          fi
+
+          bucket=$(aws ssm get-parameter \
+            --name "/${storage_stack}/FrontendBucketName" \
+            --query 'Parameter.Value' \
+            --output text)
+          api_id=$(aws cloudformation describe-stack-resources \
+            --stack-name "$api_stack" \
+            --logical-resource-ids ApiGatewayRestApi \
+            --query 'StackResources[0].PhysicalResourceId' \
+            --output text)
+          api_base_url="https://${api_id}.execute-api.${AWS_REGION}.amazonaws.com/${STAGE}"
+
+          printf "window.COFFEE_CONFIG = { apiBaseUrl: '%s' };\n" "$api_base_url" > frontend/config.js
+          aws s3 sync frontend "s3://${bucket}" --delete
+          distribution_id=$(aws cloudformation describe-stack-resources \
+            --stack-name "$storage_stack" \
+            --logical-resource-ids FrontendDistribution \
+            --query 'StackResources[0].PhysicalResourceId' \
+            --output text)
+          aws cloudfront create-invalidation \
+            --distribution-id "$distribution_id" \
+            --paths '/*'

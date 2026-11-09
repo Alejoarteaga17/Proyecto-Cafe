@@ -4,6 +4,7 @@ configValidationMode: error
 
 provider:
   name: aws
+  stackName: ${self:custom.stackName.${self:provider.stage}}
   region: us-east-1
   stage: ${opt:stage, 'dev'}
 
@@ -12,6 +13,14 @@ resources:
   - ${file(quicksight.yml)}
 
 custom:
-  bucketName: ${ssm:/${env:DEPLOY_APP, 'coffee-cultivation'}-storage/DataLakeBucketName}
+  stackName:
+    dev: ${env:DEPLOY_APP, 'coffee-cultivation'}-${self:service}
+    test: ${env:DEPLOY_APP, 'coffee-cultivation'}-${self:service}-test
+    prod: ${env:DEPLOY_APP, 'coffee-cultivation'}-${self:service}-prod
+  storageStackName:
+    dev: ${env:DEPLOY_APP, 'coffee-cultivation'}-storage
+    test: ${env:DEPLOY_APP, 'coffee-cultivation'}-storage-test
+    prod: ${env:DEPLOY_APP, 'coffee-cultivation'}-storage-prod
+  bucketName: ${ssm:/${self:custom.storageStackName.${self:provider.stage}}/DataLakeBucketName}
   databaseName: ${env:GLUE_DATABASE_NAME, 'coffee_cultivation'}
   glueScriptBucket: ${self:custom.bucketName}
