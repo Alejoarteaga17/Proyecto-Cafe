@@ -16,8 +16,9 @@ LOCATIONS = (
 )
 MAX_COUNT = 100
 MAX_INTERVAL_SECONDS = 60
+AWS_REGION = os.environ.get('AWS_REGION') or os.environ.get('AWS_DEFAULT_REGION', 'us-east-1')
 
-lambda_client = boto3.client('lambda')
+lambda_client = boto3.client('lambda', region_name=AWS_REGION)
 
 
 def handler(event, context):
@@ -76,10 +77,14 @@ def worker(event, context):
 
 
 def _iot_client():
-    endpoint = boto3.client('iot').describe_endpoint(
+    endpoint = boto3.client('iot', region_name=AWS_REGION).describe_endpoint(
         endpointType='iot:Data-ATS'
     )['endpointAddress']
-    return boto3.client('iot-data', endpoint_url=f'https://{endpoint}')
+    return boto3.client(
+        'iot-data',
+        endpoint_url=f'https://{endpoint}',
+        region_name=AWS_REGION,
+    )
 
 
 def _build_payload(sensor_id, location, generator):

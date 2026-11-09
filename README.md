@@ -1,3 +1,6 @@
+<<<<<<< HEAD
+# Proyecto-Caf-
+=======
 # README
 
 > **Estado arquitectónico:** la arquitectura aprobada es Historical CSV -> API Gateway -> Lambda -> S3 Bronze; sensores simulados -> IoT Core -> Data Firehose -> S3 Bronze; Bronze -> Glue Job 1 -> Silver -> Glue Job 2 -> Gold -> Athena/QuickSight. Los componentes MongoDB, SQS, DLQ, Secrets Manager y SNS fueron eliminados del repositorio por pertenecer a la arquitectura anterior.
@@ -589,3 +592,4 @@ que no están automatizadas en el repositorio.
 ### Variables de Serverless: `.envs/sls.env`
 
 - `SERVERLESS_ACCESS_KEY`: clave de acceso de Serverless Framework necesaria para despliegues y validaciones del CLI.
+>>>>>>> cami
