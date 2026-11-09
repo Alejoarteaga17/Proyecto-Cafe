@@ -56,16 +56,28 @@ Resources:
               - Sid: ManageProjectArtifacts
                 Effect: Allow
                 Action:
+                  - s3:CreateBucket
                   - s3:GetObject
                   - s3:PutObject
                   - s3:DeleteObject
                   - s3:ListBucket
                   - s3:GetBucketLocation
+                  - s3:PutBucketEncryption
+                  - s3:PutBucketPublicAccessBlock
+                  - s3:PutBucketVersioning
                 Resource:
                   - !Sub arn:aws:s3:::${AWS::AccountId}-*
                   - !Sub arn:aws:s3:::${AWS::AccountId}-*/*
                   - arn:aws:s3:::coffee-cultivation-*
                   - arn:aws:s3:::coffee-cultivation-*/*
+                  - arn:aws:s3:::us-east-1-cfn-storage-*
+                  - arn:aws:s3:::us-east-1-cfn-storage-*/*
+                  - arn:aws:s3:::us-east-1-cfn-data-platform-*
+                  - arn:aws:s3:::us-east-1-cfn-data-platform-*/*
+                  - arn:aws:s3:::us-east-1-cfn-backend-batch-*
+                  - arn:aws:s3:::us-east-1-cfn-backend-batch-*/*
+                  - arn:aws:s3:::us-east-1-cfn-iot-*
+                  - arn:aws:s3:::us-east-1-cfn-iot-*/*
               - Sid: ReadProjectParameters
                 Effect: Allow
                 Action:
