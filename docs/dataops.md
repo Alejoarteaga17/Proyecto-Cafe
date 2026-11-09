@@ -64,6 +64,12 @@ fuente Athena y los datasets de QuickSight; el dashboard debe existir o
 publicarse separadamente con el contrato de
 `docs/quicksight-dashboard-definition.json`.
 
+Los cuatro stacks Serverless usan buckets S3 de artefactos previamente creados
+por ambiente (`us-east-1-cfn-storage-*`, `us-east-1-cfn-data-platform-*`,
+`us-east-1-cfn-backend-batch-*` y `us-east-1-cfn-iot-*`). Estos buckets deben
+existir antes del primer despliegue y deben estar versionados, cifrados y
+bloqueados para acceso público.
+
 La configuración AWS ya está creada en la cuenta de desarrollo:
 
 - Stack: `coffee-cultivation-github-actions-oidc`
