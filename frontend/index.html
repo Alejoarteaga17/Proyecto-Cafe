@@ -865,41 +865,6 @@
           return;
         }
 
-        async function startSimulation() {
-          let url;
-          try {
-            url = new URL(simulationApiUrlInput.value.trim());
-            if (!apiKeyInput.value.trim()) throw new Error('Introduce la API Key de API Gateway.');
-            const count = Number(simulationCountInput.value);
-            const interval = Number(simulationIntervalInput.value);
-            if (!Number.isInteger(count) || count < 1 || count > 100) throw new Error('La cantidad debe estar entre 1 y 100.');
-            if (!Number.isFinite(interval) || interval < 0 || interval > 60) throw new Error('El intervalo debe estar entre 0 y 60 segundos.');
-          } catch (error) {
-            setStatus(simulationStatus, error.message, 'error');
-            return;
-          }
-          simulateButton.disabled = true;
-          setStatus(simulationStatus, 'Iniciando simulación IoT...');
-          try {
-            const body = {
-              count: Number(simulationCountInput.value),
-              interval: Number(simulationIntervalInput.value),
-            };
-            if (simulationSeedInput.value.trim()) body.seed = Number(simulationSeedInput.value);
-            const response = await fetch(url, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'x-api-key': apiKeyInput.value.trim() },
-              body: JSON.stringify(body),
-            });
-            const result = await response.json();
-            if (!response.ok) throw new Error(result.message || `No se pudo iniciar la simulación (HTTP ${response.status}).`);
-            setStatus(simulationStatus, `Simulación iniciada: ${result.count} eventos cada ${result.interval}s. La publicación continúa en segundo plano.`, 'success');
-          } catch (error) {
-            setStatus(simulationStatus, error.message || 'No se pudo iniciar la simulación.', 'error');
-          } finally {
-            simulateButton.disabled = false;
-          }
-        }
         loadButton.disabled = true;
         dashboardContainer.replaceChildren();
         try {
@@ -929,6 +894,42 @@
           setStatus(dashboardStatus, error.message || 'No se pudo cargar el dashboard.', 'error');
         } finally {
           loadButton.disabled = false;
+        }
+      }
+
+      async function startSimulation() {
+        let url;
+        try {
+          url = new URL(simulationApiUrlInput.value.trim());
+          if (!apiKeyInput.value.trim()) throw new Error('Introduce la API Key de API Gateway.');
+          const count = Number(simulationCountInput.value);
+          const interval = Number(simulationIntervalInput.value);
+          if (!Number.isInteger(count) || count < 1 || count > 100) throw new Error('La cantidad debe estar entre 1 y 100.');
+          if (!Number.isFinite(interval) || interval < 0 || interval > 60) throw new Error('El intervalo debe estar entre 0 y 60 segundos.');
+        } catch (error) {
+          setStatus(simulationStatus, error.message, 'error');
+          return;
+        }
+        simulateButton.disabled = true;
+        setStatus(simulationStatus, 'Iniciando simulación IoT...');
+        try {
+          const body = {
+            count: Number(simulationCountInput.value),
+            interval: Number(simulationIntervalInput.value),
+          };
+          if (simulationSeedInput.value.trim()) body.seed = Number(simulationSeedInput.value);
+          const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-api-key': apiKeyInput.value.trim() },
+            body: JSON.stringify(body),
+          });
+          const result = await response.json();
+          if (!response.ok) throw new Error(result.message || `No se pudo iniciar la simulación (HTTP ${response.status}).`);
+          setStatus(simulationStatus, `Simulación iniciada: ${result.count} eventos cada ${result.interval}s. La publicación continúa en segundo plano.`, 'success');
+        } catch (error) {
+          setStatus(simulationStatus, error.message || 'No se pudo iniciar la simulación.', 'error');
+        } finally {
+          simulateButton.disabled = false;
         }
       }
 
