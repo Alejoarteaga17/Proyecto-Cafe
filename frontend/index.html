@@ -71,6 +71,7 @@
       .access-card label { margin-top: 0; }
       .panel { display: none; }
       .panel.active { display: block; }
+      .panel[hidden] { display: none; }
       .card {
         width: 100%;
         padding: clamp(22px, 3vw, 36px);
@@ -537,10 +538,10 @@
         <p class="intro">Publica datos históricos y visualiza el dashboard en la misma aplicación.</p>
       </header>
 
-      <nav class="tabs" aria-label="Secciones de la aplicación">
-        <button class="tab active" data-tab="upload" type="button">Publicar CSV</button>
-        <button class="tab" data-tab="simulation" type="button">Simulación IoT</button>
-        <button class="tab" data-tab="dashboard" type="button">Dashboard</button>
+      <nav class="tabs" role="tablist" aria-label="Secciones de la aplicación">
+        <button id="upload-tab" class="tab active" data-tab="upload" role="tab" aria-controls="upload" aria-selected="true" type="button">Publicar CSV</button>
+        <button id="simulation-tab" class="tab" data-tab="simulation" role="tab" aria-controls="simulation" aria-selected="false" tabindex="-1" type="button">Simulación IoT</button>
+        <button id="dashboard-tab" class="tab" data-tab="dashboard" role="tab" aria-controls="dashboard" aria-selected="false" tabindex="-1" type="button">Dashboard</button>
       </nav>
 
       <section class="card access-card">
@@ -549,12 +550,12 @@
         <p class="intro">La misma clave se utiliza para publicar el CSV y cargar el dashboard.</p>
       </section>
 
-      <section id="upload" class="panel active" aria-labelledby="upload-tab">
+      <section id="upload" class="panel active" role="tabpanel" aria-labelledby="upload-tab" tabindex="0">
         <div class="card">
           <h2>Publicar CSV histórico</h2>
           <p class="intro">Lambda validará el archivo antes de guardarlo en S3 Bronze.</p>
-          <label for="csvFile">Archivo CSV</label>
-          <div id="dropZone" class="drop-zone" role="button" tabindex="0" aria-controls="csvFile">
+          <label id="csvFileLabel" for="csvFile">Archivo CSV</label>
+          <div id="dropZone" class="drop-zone" role="group" aria-labelledby="csvFileLabel" aria-describedby="selectedFile">
             <strong>Arrastra y suelta tu CSV aquí</strong>
             <span>o haz clic para seleccionarlo desde tu equipo</span>
             <button id="chooseFileButton" type="button">Seleccionar archivo</button>
@@ -573,7 +574,7 @@
         </div>
       </section>
 
-      <section id="simulation" class="panel" aria-labelledby="simulation-tab">
+      <section id="simulation" class="panel" role="tabpanel" aria-labelledby="simulation-tab" tabindex="0" hidden>
         <div class="card simulation-controls">
           <h2>Generar simulación IoT</h2>
           <p class="intro">Genera lecturas y publícalas en AWS IoT Core usando el mismo flujo del simulador de terminal.</p>
@@ -598,7 +599,7 @@
         </div>
       </section>
 
-      <section id="dashboard" class="panel" aria-labelledby="dashboard-tab">
+      <section id="dashboard" class="panel" role="tabpanel" aria-labelledby="dashboard-tab" tabindex="0" hidden>
         <div class="card dashboard-controls">
           <h2>Dashboard de Cultivo de Café</h2>
           <p class="intro">Datos Gold históricos y telemetría IoT en QuickSight.</p>
@@ -614,7 +615,7 @@
           </div>
           <div class="warning">La API Key solo permanece en memoria durante esta sesión del navegador.</div>
         </div>
-        <section id="dashboardContainer" class="card" aria-label="Dashboard QuickSight"></section>
+        <section id="dashboardContainer" class="card" aria-label="Dashboard QuickSight" aria-live="polite"></section>
       </section>
     </main>
 
@@ -648,13 +649,36 @@
       }
 
       function showTab(name, updateHash = true) {
-        tabs.forEach((tab) => tab.classList.toggle('active', tab.dataset.tab === name));
-        panels.forEach((panel) => panel.classList.toggle('active', panel.id === name));
+        tabs.forEach((tab) => {
+          const isActive = tab.dataset.tab === name;
+          tab.classList.toggle('active', isActive);
+          tab.setAttribute('aria-selected', String(isActive));
+          tab.tabIndex = isActive ? 0 : -1;
+        });
+        panels.forEach((panel) => {
+          const isActive = panel.id === name;
+          panel.classList.toggle('active', isActive);
+          panel.hidden = !isActive;
+        });
         document.body.classList.toggle('dashboard-mode', name === 'dashboard');
         if (updateHash) history.replaceState(null, '', `#${name}`);
       }
 
-      tabs.forEach((tab) => tab.addEventListener('click', () => showTab(tab.dataset.tab)));
+      tabs.forEach((tab, index) => {
+        tab.addEventListener('click', () => showTab(tab.dataset.tab));
+        tab.addEventListener('keydown', (event) => {
+          if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+          event.preventDefault();
+          const nextIndex = event.key === 'Home'
+            ? 0
+            : event.key === 'End'
+              ? tabs.length - 1
+              : (index + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length;
+          const nextTab = tabs[nextIndex];
+          showTab(nextTab.dataset.tab);
+          nextTab.focus();
+        });
+      });
       showTab(['dashboard', 'simulation'].includes(location.hash.slice(1)) ? location.hash.slice(1) : 'upload', false);
 
       function formatBytes(bytes) {
@@ -820,9 +844,6 @@
         csvFileInput.click();
       });
       dropZone.addEventListener('click', () => csvFileInput.click());
-      dropZone.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); csvFileInput.click(); }
-      });
       dropZone.addEventListener('dragover', (event) => { event.preventDefault(); dropZone.classList.add('drag-over'); });
       dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
       dropZone.addEventListener('drop', (event) => {
