@@ -84,3 +84,7 @@ Bronze y la regla IoT inicia automáticamente la state machine. Ambas
 ejecuciones se mantienen independientes. Esta estrategia inicia una ejecución
 por evento; para un volumen alto debe sustituirse por una ventana batch
 controlada como parte de DataOps para evitar ejecuciones concurrentes de Glue.
+Los Glue Jobs IoT tienen cola nativa habilitada y un máximo de una ejecución
+simultánea para que los eventos cercanos no fallen por
+`ConcurrentRunsExceededException`; pueden quedar en estado `QUEUED` hasta que
+termine el procesamiento anterior.

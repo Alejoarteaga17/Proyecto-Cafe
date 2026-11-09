@@ -80,6 +80,15 @@ La pestaña **Publicar CSV** queda disponible en la misma página. El enlace
 antiguo `dashboard.html` redirige a `index.html#dashboard` para conservar
 compatibilidad con marcadores existentes.
 
+### Generar simulación IoT desde el frontend
+
+En la pestaña **Simulación IoT**, introduce la cantidad de eventos (`count`),
+el intervalo en segundos (`interval`) y, opcionalmente, una semilla. Pulsa
+**Iniciar simulación**. La API inicia el simulador en segundo plano; cada
+evento se publica en IoT Core y activa automáticamente el flujo Firehose,
+Bronze y `IotEtlStateMachine`. Se permiten de 1 a 100 eventos y un intervalo
+de 0 a 60 segundos.
+
 La página no contiene credenciales AWS ni consulta S3/Athena directamente. El
 endpoint Lambda genera una URL de sesión temporal para el usuario registrado
 de QuickSight y la API Key se usa solo en memoria.

@@ -30,3 +30,5 @@ def test_iot_glue_jobs_use_year_month_partitions_and_separate_paths():
     assert 'gold/iot/' in template
     assert 'Name: YEAR' in template
     assert 'Name: MM' in template
+    assert 'JobRunQueuingEnabled: true' in template
+    assert 'MaxConcurrentRuns: 1' in template

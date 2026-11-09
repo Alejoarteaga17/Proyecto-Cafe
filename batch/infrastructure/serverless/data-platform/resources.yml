@@ -114,6 +114,9 @@ Resources:
     Properties:
       Name: ${self:service}-iot-bronze-to-silver-${sls:stage}
       Role: !GetAtt GlueJobRole.Arn
+      ExecutionProperty:
+        MaxConcurrentRuns: 1
+      JobRunQueuingEnabled: true
       GlueVersion: '4.0'
       WorkerType: G.1X
       NumberOfWorkers: 2
@@ -137,6 +140,9 @@ Resources:
     Properties:
       Name: ${self:service}-iot-silver-to-gold-${sls:stage}
       Role: !GetAtt GlueJobRole.Arn
+      ExecutionProperty:
+        MaxConcurrentRuns: 1
+      JobRunQueuingEnabled: true
       GlueVersion: '4.0'
       WorkerType: G.1X
       NumberOfWorkers: 2

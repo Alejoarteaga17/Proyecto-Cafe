@@ -8,6 +8,7 @@
 | IaC del flujo aprobado | COMPLETE in repository; deployment NOT VERIFIED in this review | Stacks Storage, Data Platform, API/Lambda e IoT están versionados; no se ejecutó despliegue durante esta revisión |
 | Historical ingestion | COMPLETE in code; AWS evidence historical | Lambda, API Gateway, validación y escritura a `bronze/historical/` están en el repositorio; la ejecución AWS indicada es evidencia histórica |
 | IoT ingestion | COMPLETE in code; AWS delivery and trigger validated | IoT Core mantiene la ruta directa a Firehose/S3 Bronze y la regla inicia `IotEtlStateMachine`; una prueba MQTT creó una ejecución real |
+| IoT frontend simulator | COMPLETE in development | `frontend/index.html`, `IotSimulation` Lambda y `POST /coffee-iot/simulate`; endpoint real aceptó 2 eventos y creó ejecuciones IoT |
 | Glue transformations | COMPLETE in code; AWS evidence historical | Los cuatro jobs están separados por flujo y tienen pruebas locales; la ejecución AWS indicada es evidencia histórica |
 | Step Functions | Historical and IoT automatic triggers COMPLETE in development | `ValidateAndStore` inicia `HistoricalEtlStateMachine`; la regla IoT inicia `IotEtlStateMachine`; ambas máquinas usan `glue:startJobRun.sync` y encadenan Job 1 -> Job 2 |
 | Dos optimizaciones | COMPLETE in code; benchmark NOT VERIFIED | Particionado S3 por `YEAR/MM`, Parquet Gold y resumen Gold; consultas comparativas en `batch/benchmarks/` y procedimiento en `docs/optimization-benchmark.md` |

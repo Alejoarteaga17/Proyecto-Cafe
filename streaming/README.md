@@ -70,6 +70,14 @@ automáticamente el endpoint IoT Data ATS. La identidad IAM usada debe tener
 permiso `iot:DescribeEndpoint` y `iot:Publish` para el topic. No es necesario
 copiar manualmente el JSON en el MQTT test client.
 
+También puedes usar la pestaña **Simulación IoT** de
+`http://localhost:8080/`. Introduce la API Key compartida, selecciona
+`count`, `interval` y una semilla opcional, y pulsa **Iniciar simulación**.
+El frontend llama al endpoint protegido
+`POST /coffee-iot/simulate`; el backend inicia el generador en segundo plano
+sin exponer credenciales AWS. Esto es un productor de pruebas, no un
+consumidor intermedio de la ruta IoT aprobada.
+
 ## Despliegue y validación
 
 El bucket debe existir previamente desde

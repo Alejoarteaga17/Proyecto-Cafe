@@ -18,6 +18,8 @@
   after Bronze validation and storage, returning the execution ARN.
 - IoT Core rules now start `IotEtlStateMachine` directly while preserving the
   IoT Core -> Firehose -> S3 Bronze delivery path.
+- Added the protected `POST /coffee-iot/simulate` endpoint and a frontend
+  **Simulación IoT** tab with count, interval, and optional seed controls.
 - Contract tests covering the separation of historical and IoT Step Functions.
 - Athena optimization benchmark queries and documentation for comparing
   partition pruning, Parquet Gold and the unoptimized Bronze baseline.

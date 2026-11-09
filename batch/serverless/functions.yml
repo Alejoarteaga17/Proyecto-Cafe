@@ -67,3 +67,45 @@ DashboardEmbedCors:
         path: coffee-dashboard/embed-url
         method: options
         private: false
+
+IotSimulation:
+  name: ${self:custom.servicePrefix}-IotSimulation
+  handler: src/iot_simulator/handler.handler
+  role: !GetAtt IotSimulationRole.Arn
+  timeout: 10
+  memorySize: 128
+  package:
+    patterns:
+    - ../src/iot_simulator/**
+  environment:
+    SIMULATOR_WORKER_FUNCTION_NAME: ${self:custom.servicePrefix}-IotSimulationWorker
+  events:
+    - http:
+        path: coffee-iot/simulate
+        method: post
+        private: true
+        cors: true
+
+IotSimulationCors:
+  name: ${self:custom.servicePrefix}-IotSimulationCors
+  handler: src/validate_and_store/cors_handler.handler
+  timeout: 5
+  memorySize: 128
+  package:
+    patterns:
+    - ../src/validate_and_store/**
+  events:
+    - http:
+        path: coffee-iot/simulate
+        method: options
+        private: false
+
+IotSimulationWorker:
+  name: ${self:custom.servicePrefix}-IotSimulationWorker
+  handler: src/iot_simulator/handler.worker
+  role: !GetAtt IotSimulationRole.Arn
+  timeout: 900
+  memorySize: 128
+  package:
+    patterns:
+    - ../src/iot_simulator/**

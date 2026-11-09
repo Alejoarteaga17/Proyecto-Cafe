@@ -118,6 +118,7 @@
       }
       #dashboardContainer iframe { width: 100%; min-height: 760px; border: 0; }
       .dashboard-controls { max-width: 760px; }
+      .simulation-controls { max-width: 760px; }
       @media (max-width: 720px) {
         body { padding: 12px; }
         .tabs { overflow-x: auto; }
@@ -134,6 +135,7 @@
 
       <nav class="tabs" aria-label="Secciones de la aplicación">
         <button class="tab active" data-tab="upload" type="button">Publicar CSV</button>
+        <button class="tab" data-tab="simulation" type="button">Simulación IoT</button>
         <button class="tab" data-tab="dashboard" type="button">Dashboard</button>
       </nav>
 
@@ -161,6 +163,28 @@
           </div>
           <div id="uploadStatus" class="status" role="status" aria-live="polite"></div>
           <pre id="uploadResponse" hidden></pre>
+        </div>
+      </section>
+
+      <section id="simulation" class="panel" aria-labelledby="simulation-tab">
+        <div class="card simulation-controls">
+          <h2>Generar simulación IoT</h2>
+          <p class="intro">Genera lecturas y publícalas en AWS IoT Core usando el mismo flujo del simulador de terminal.</p>
+          <label for="simulationApiUrl">Endpoint de simulación</label>
+          <input id="simulationApiUrl" type="url" value="https://iwmkiead9h.execute-api.us-east-1.amazonaws.com/dev/coffee-iot/simulate" autocomplete="url" />
+          <label for="simulationCount">Cantidad de eventos</label>
+          <input id="simulationCount" type="number" min="1" max="100" value="3" />
+          <label for="simulationInterval">Intervalo entre eventos (segundos)</label>
+          <input id="simulationInterval" type="number" min="0" max="60" step="0.1" value="2" />
+          <label for="simulationSeed">Semilla (opcional)</label>
+          <input id="simulationSeed" type="number" placeholder="Reproducibilidad opcional" />
+          <div class="actions">
+            <button id="simulateButton" type="button">Iniciar simulación</button>
+          </div>
+          <div id="simulationStatus" class="status" role="status" aria-live="polite">
+            Define la cantidad y el intervalo, y pulsa Iniciar simulación.
+          </div>
+          <div class="warning">La simulación usa la API protegida y no expone credenciales AWS en el navegador. Cada evento activa la entrega IoT y su procesamiento automático.</div>
         </div>
       </section>
 
@@ -194,6 +218,12 @@
       const uploadStatus = document.getElementById('uploadStatus');
       const uploadResponse = document.getElementById('uploadResponse');
       const loadButton = document.getElementById('loadButton');
+      const simulationApiUrlInput = document.getElementById('simulationApiUrl');
+      const simulationCountInput = document.getElementById('simulationCount');
+      const simulationIntervalInput = document.getElementById('simulationInterval');
+      const simulationSeedInput = document.getElementById('simulationSeed');
+      const simulateButton = document.getElementById('simulateButton');
+      const simulationStatus = document.getElementById('simulationStatus');
       const embedApiUrlInput = document.getElementById('embedApiUrl');
       const dashboardStatus = document.getElementById('dashboardStatus');
       const dashboardContainer = document.getElementById('dashboardContainer');
@@ -211,7 +241,7 @@
       }
 
       tabs.forEach((tab) => tab.addEventListener('click', () => showTab(tab.dataset.tab)));
-      showTab(location.hash === '#dashboard' ? 'dashboard' : 'upload', false);
+      showTab(['dashboard', 'simulation'].includes(location.hash.slice(1)) ? location.hash.slice(1) : 'upload', false);
 
       function formatBytes(bytes) {
         if (bytes < 1024) return `${bytes} B`;
@@ -301,6 +331,42 @@
           setStatus(dashboardStatus, error.message, 'error');
           return;
         }
+
+        async function startSimulation() {
+          let url;
+          try {
+            url = new URL(simulationApiUrlInput.value.trim());
+            if (!apiKeyInput.value.trim()) throw new Error('Introduce la API Key de API Gateway.');
+            const count = Number(simulationCountInput.value);
+            const interval = Number(simulationIntervalInput.value);
+            if (!Number.isInteger(count) || count < 1 || count > 100) throw new Error('La cantidad debe estar entre 1 y 100.');
+            if (!Number.isFinite(interval) || interval < 0 || interval > 60) throw new Error('El intervalo debe estar entre 0 y 60 segundos.');
+          } catch (error) {
+            setStatus(simulationStatus, error.message, 'error');
+            return;
+          }
+          simulateButton.disabled = true;
+          setStatus(simulationStatus, 'Iniciando simulación IoT...');
+          try {
+            const body = {
+              count: Number(simulationCountInput.value),
+              interval: Number(simulationIntervalInput.value),
+            };
+            if (simulationSeedInput.value.trim()) body.seed = Number(simulationSeedInput.value);
+            const response = await fetch(url, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'x-api-key': apiKeyInput.value.trim() },
+              body: JSON.stringify(body),
+            });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.message || `No se pudo iniciar la simulación (HTTP ${response.status}).`);
+            setStatus(simulationStatus, `Simulación iniciada: ${result.count} eventos cada ${result.interval}s. La publicación continúa en segundo plano.`, 'success');
+          } catch (error) {
+            setStatus(simulationStatus, error.message || 'No se pudo iniciar la simulación.', 'error');
+          } finally {
+            simulateButton.disabled = false;
+          }
+        }
         loadButton.disabled = true;
         dashboardContainer.replaceChildren();
         try {
@@ -342,6 +408,7 @@
       });
       publishButton.addEventListener('click', publishCsv);
       loadButton.addEventListener('click', loadDashboard);
+      simulateButton.addEventListener('click', startSimulation);
     </script>
   </body>
 </html>
