@@ -7,6 +7,8 @@ provider:
   stackName: ${self:custom.stackName.${self:provider.stage}}
   region: us-east-1
   stage: ${opt:stage, 'dev'}
+  deploymentBucket:
+    name: ${self:custom.s3.deploymentBucketName.${self:provider.stage}}
 
 resources:
   - ${file(resources.yml)}
@@ -24,3 +26,8 @@ custom:
   bucketName: ${ssm:/${self:custom.storageStackName.${self:provider.stage}}/DataLakeBucketName}
   databaseName: ${env:GLUE_DATABASE_NAME, 'coffee_cultivation'}
   glueScriptBucket: ${self:custom.bucketName}
+  s3:
+    deploymentBucketName:
+      dev: ${self:provider.region}-cfn-${self:service}-dev-${env:DEVELOPER, 'aaccode'}-deploys
+      test: ${self:provider.region}-cfn-${self:service}-test-deploys
+      prod: ${self:provider.region}-cfn-${self:service}-prod-deploys

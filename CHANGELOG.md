@@ -10,6 +10,8 @@
   deleting the storage output parameters.
 - Added the S3 resource-tag listing permission required by CloudFormation when
   updating tagged buckets.
+- Configured all Serverless stacks to use their precreated, environment-scoped
+  deployment buckets instead of the global Serverless Framework SSM parameter.
 - Optional QuickSight Athena data source and historical/IoT Gold datasets,
   disabled by default, plus a dashboard contract for account-specific setup.
 - QuickSight Athena source, DIRECT_QUERY datasets and the development dashboard
