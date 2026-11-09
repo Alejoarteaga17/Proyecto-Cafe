@@ -65,7 +65,7 @@ Resources:
                   - s3:ListBucket
                   - s3:GetBucketLocation
                   - s3:PutBucketPolicy
-                  - s3:PutBucketEncryption
+                  - s3:PutEncryptionConfiguration
                   - s3:PutBucketPublicAccessBlock
                   - s3:PutBucketVersioning
                 Resource:
@@ -90,7 +90,9 @@ Resources:
               - Sid: PassProjectRolesToCloudFormation
                 Effect: Allow
                 Action: iam:PassRole
-                Resource: !Sub arn:aws:iam::${AWS::AccountId}:role/coffee-cultivation-*
+                Resource:
+                  - !Sub arn:aws:iam::${AWS::AccountId}:role/coffee-cultivation-*
+                  - !Sub arn:aws:iam::${AWS::AccountId}:role/data-platform-*
               - Sid: ManageProjectResources
                 Effect: Allow
                 Action:
@@ -110,6 +112,8 @@ Resources:
                   - iam:ListRolePolicies
                   - iam:PutRolePolicy
                   - iam:TagRole
+                  - iam:UpdateAssumeRolePolicy
+                  - iam:UpdateRoleDescription
                   - iam:UntagRole
                   - iot:*
                   - lambda:*
