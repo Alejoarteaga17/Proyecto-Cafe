@@ -41,6 +41,9 @@ Resources:
                   - !Sub repo:${GitHubRepository}:environment:dev
                   - !Sub repo:${GitHubRepository}:environment:test
                   - !Sub repo:${GitHubRepository}:environment:prod
+                  - repo:Alejoarteaga17@120742659/Proyecto-Cafe@1350180841:environment:dev
+                  - repo:Alejoarteaga17@120742659/Proyecto-Cafe@1350180841:environment:test
+                  - repo:Alejoarteaga17@120742659/Proyecto-Cafe@1350180841:environment:prod
       Policies:
         - PolicyName: coffee-cultivation-ci-cd
           PolicyDocument:
