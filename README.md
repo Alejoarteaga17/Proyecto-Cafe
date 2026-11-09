@@ -210,6 +210,28 @@ Los stacks dependen de parámetros SSM y del bucket creado por el stack
    conservan los nombres históricos de los stacks; `test` y `prod` usan el
    sufijo del stage (`coffee-cultivation-storage-test`, por ejemplo).
 
+   Si Storage falla con `Access denied for operation 'PutParameter'`, actualiza
+   primero el stack de identidad OIDC con credenciales administrativas. El
+   template [`infrastructure/github-actions-oidc.yml`](infrastructure/github-actions-oidc.yml)
+   ya declara `ssm:PutParameter`, `ssm:DeleteParameter`,
+   `ssm:AddTagsToResource` y `ssm:RemoveTagsFromResource` para los parámetros
+   del proyecto, pero cambiar el template no actualiza un stack existente:
+
+   ```bash
+   aws cloudformation deploy \
+     --region us-east-1 \
+     --stack-name coffee-cultivation-github-actions-oidc \
+     --template-file infrastructure/github-actions-oidc.yml \
+     --capabilities CAPABILITY_NAMED_IAM \
+     --parameter-overrides \
+       GitHubRepository=Alejoarteaga17/Proyecto-Cafe \
+       RoleName=coffee-cultivation-github-actions
+   ```
+
+   Espera `UPDATE_COMPLETE` y reejecuta el workflow. No otorgues el permiso
+   sobre todos los parámetros (`Resource: "*"`) ni despliegues el stack OIDC
+   con el mismo rol de aplicación.
+
 2. **Publicar los scripts y el código compartido de Glue** en el bucket
    creado en el paso anterior. Sustituye `<data-lake-bucket>` por el nombre
    real del bucket almacenado en el parámetro

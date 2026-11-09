@@ -78,6 +78,32 @@ La configuración AWS ya está creada en la cuenta de desarrollo:
 - Estado verificado: `CREATE_COMPLETE`
 - Rol: `arn:aws:iam::688060219062:role/coffee-cultivation-github-actions`
 
+El template del rol incluye `ssm:PutParameter`, `ssm:DeleteParameter`,
+`ssm:AddTagsToResource` y `ssm:RemoveTagsFromResource` para los parámetros bajo
+`coffee-cultivation-*`. CloudFormation necesita también administrar las
+etiquetas del parámetro. Si el despliegue falla con
+`Access denied for operation 'PutParameter'`, el stack del rol está
+desactualizado: modificar el archivo no modifica automáticamente la política
+ya desplegada. Actualízalo una vez con credenciales administrativas o con un
+rol autorizado a administrar IAM:
+
+```bash
+aws cloudformation deploy \
+  --region us-east-1 \
+  --stack-name coffee-cultivation-github-actions-oidc \
+  --template-file infrastructure/github-actions-oidc.yml \
+  --capabilities CAPABILITY_NAMED_IAM \
+  --parameter-overrides \
+    GitHubRepository=Alejoarteaga17/Proyecto-Cafe \
+    RoleName=coffee-cultivation-github-actions
+```
+
+Confirma que el stack termine en `UPDATE_COMPLETE` y vuelve a ejecutar el
+workflow `CD - AWS deployment`. No concedas `ssm:PutParameter` sobre `*`: el
+permiso ya está limitado a los parámetros del proyecto. El stack OIDC no se
+actualiza automáticamente desde el workflow de aplicación para evitar que un
+rol de despliegue modifique su propia relación de confianza o sus permisos.
+
 En GitHub todavía debe registrarse ese ARN como `AWS_DEPLOY_ROLE_ARN` en
 `dev`, `test` y `prod`. También debe configurarse la aprobación requerida para
 `prod`; esto requiere permisos de administración del repositorio y no puede

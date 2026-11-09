@@ -4,6 +4,10 @@
 
 ### Added
 
+- Documented recovery for stale GitHub OIDC role policies when CloudFormation
+  cannot create the storage stack's SSM parameters.
+- Added the SSM tag permissions required by CloudFormation when creating or
+  deleting the storage output parameters.
 - Optional QuickSight Athena data source and historical/IoT Gold datasets,
   disabled by default, plus a dashboard contract for account-specific setup.
 - QuickSight Athena source, DIRECT_QUERY datasets and the development dashboard

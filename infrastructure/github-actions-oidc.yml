@@ -131,6 +131,8 @@ Resources:
                 Action:
                   - ssm:DeleteParameter
                   - ssm:PutParameter
+                  - ssm:AddTagsToResource
+                  - ssm:RemoveTagsFromResource
                 Resource: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/coffee-cultivation-*
               - Sid: ReadDeploymentIdentity
                 Effect: Allow
