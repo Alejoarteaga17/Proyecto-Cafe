@@ -1,0 +1,30 @@
+Resources:
+  DataLakeBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: ${self:custom.dataLakeBucket.name.${self:custom.stage}}
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  DataLakeBucketName:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub /${AWS::StackName}/DataLakeBucketName
+      Type: String
+      Value: !Ref DataLakeBucket
+
+  DataLakeBucketArn:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub /${AWS::StackName}/DataLakeBucketArn
+      Type: String
+      Value: !GetAtt DataLakeBucket.Arn

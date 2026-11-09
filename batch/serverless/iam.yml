@@ -1,0 +1,76 @@
+Resources:
+  ValidateAndStoreRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: ${self:custom.servicePrefix}-ValidateAndStore
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: ${self:custom.servicePrefix}-ValidateAndStore
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                Resource: ${self:custom.s3.dataLakeBucket.arn}/bronze/historical/*
+              - Effect: Allow
+                Action: states:StartExecution
+                Resource: ${env:HISTORICAL_STATE_MACHINE_ARN, '*'}
+
+  DashboardEmbedRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: ${self:custom.servicePrefix}-DashboardEmbed
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: ${self:custom.servicePrefix}-DashboardEmbed
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - quicksight:GenerateEmbedUrlForRegisteredUser
+                Resource: '*'
+
+  IotSimulationRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: ${self:custom.servicePrefix}-IotSimulation
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: ${self:custom.servicePrefix}-IotSimulation
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - iot:DescribeEndpoint
+                  - iot:Publish
+                Resource: '*'
+              - Effect: Allow
+                Action: lambda:InvokeFunction
+                Resource: !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${self:custom.servicePrefix}-IotSimulationWorker

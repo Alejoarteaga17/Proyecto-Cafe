@@ -1,0 +1,83 @@
+{
+  "description": "Dashboard contract for the historical and IoT Gold datasets.",
+  "deployed_development": {
+    "region": "us-east-1",
+    "account": "688060219062",
+    "dashboard_id": "coffee-cultivation-dashboard-dev",
+    "status": "CREATION_SUCCESSFUL",
+    "tabs": ["Histórico mensual", "Sensores IoT"]
+  },
+  "datasets": [
+    {
+      "id": "historical-gold",
+      "catalog": "AwsDataCatalog",
+      "table": "coffee_historical_gold",
+      "dimensions": ["Location", "YEAR", "MM"],
+      "measures": [
+        "record_count",
+        "avg_temp_max",
+        "avg_temp_min",
+        "avg_humidity",
+        "total_precipitation_mm",
+        "avg_solar_radiation",
+        "avg_close_usd_60kg"
+      ]
+    },
+    {
+      "id": "iot-gold",
+      "catalog": "AwsDataCatalog",
+      "table": "coffee_iot_gold",
+      "dimensions": ["sensor_id", "location", "YEAR", "MM"],
+      "measures": [
+        "record_count",
+        "avg_temp_max",
+        "avg_temp_min",
+        "avg_humidity",
+        "total_precipitation_mm",
+        "avg_soil_ph",
+        "avg_soil_moisture",
+        "avg_n",
+        "avg_p",
+        "avg_k"
+      ]
+    }
+  ],
+  "dashboard_views": [
+    "Historical monthly climate and price summary with KPI cards, temperature and price trends, precipitation comparison, and detail table",
+    "IoT sensor monthly conditions and nutrient summary with KPI cards, condition trends, sensor moisture comparison, nutrient comparison, and detail table"
+  ],
+  "visuals": {
+    "historical-sheet": [
+      "KPI: average maximum temperature",
+      "KPI: average humidity",
+      "KPI: average precipitation",
+      "KPI: average coffee price",
+      "Line chart: monthly maximum and minimum temperature",
+      "Line chart: monthly coffee price",
+      "Bar chart: precipitation by location",
+      "Detail table by location, year, and month"
+    ],
+    "iot-sheet": [
+      "KPI: average maximum temperature",
+      "KPI: average humidity",
+      "KPI: average soil pH",
+      "KPI: average soil moisture",
+      "Line chart: monthly temperature and humidity",
+      "Bar chart: soil moisture by sensor",
+      "Bar chart: average N, P, and K by location",
+      "Detail table by sensor, location, year, and month"
+    ]
+  },
+  "deployment": {
+    "requires": [
+      "QuickSight subscription in the AWS account",
+      "QuickSightPrincipalArn",
+      "Athena and Glue permissions for the QuickSight service role"
+    ],
+    "validation": [
+      "Confirm both datasets can query their Athena tables",
+      "Apply YEAR/MM filters and verify partition pruning",
+      "Verify the published KPI, chart, and detail-table visuals from the declared dimensions and measures"
+    ]
+  }
+}

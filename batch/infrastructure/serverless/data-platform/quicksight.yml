@@ -1,0 +1,136 @@
+Parameters:
+  QuickSightEnabled:
+    Type: String
+    Default: 'false'
+    AllowedValues:
+      - 'true'
+      - 'false'
+    Description: Enable optional QuickSight data sources and datasets.
+  QuickSightPrincipalArn:
+    Type: String
+    Default: ''
+    Description: Authorized QuickSight user or group ARN.
+
+Conditions:
+  IsQuickSightEnabled: !Equals [!Ref QuickSightEnabled, 'true']
+
+Resources:
+  QuickSightAthenaDataSource:
+    Type: AWS::QuickSight::DataSource
+    Condition: IsQuickSightEnabled
+    Properties:
+      AwsAccountId: !Ref AWS::AccountId
+      DataSourceId: ${self:service}-athena-${sls:stage}
+      Name: ${self:service}-athena-${sls:stage}
+      Type: ATHENA
+      DataSourceParameters:
+        AthenaParameters:
+          WorkGroup: !Ref GoldWorkGroup
+      Permissions:
+        - Principal: !Ref QuickSightPrincipalArn
+          Actions:
+            - quicksight:DescribeDataSource
+            - quicksight:DescribeDataSourcePermissions
+            - quicksight:PassDataSource
+            - quicksight:UpdateDataSource
+            - quicksight:UpdateDataSourcePermissions
+            - quicksight:DeleteDataSource
+
+  QuickSightHistoricalDataset:
+    Type: AWS::QuickSight::DataSet
+    Condition: IsQuickSightEnabled
+    Properties:
+      AwsAccountId: !Ref AWS::AccountId
+      DataSetId: ${self:service}-historical-gold-${sls:stage}
+      Name: ${self:service}-historical-gold-${sls:stage}
+      ImportMode: DIRECT_QUERY
+      PhysicalTableMap:
+        HistoricalGold:
+          RelationalTable:
+            DataSourceArn: !GetAtt QuickSightAthenaDataSource.Arn
+            Catalog: AwsDataCatalog
+            Schema: !Ref GlueDatabase
+            Name: coffee_historical_gold
+            InputColumns:
+              - {Name: Location, Type: STRING}
+              - {Name: record_count, Type: INTEGER}
+              - {Name: avg_temp_max, Type: DECIMAL}
+              - {Name: avg_temp_min, Type: DECIMAL}
+              - {Name: avg_humidity, Type: DECIMAL}
+              - {Name: total_precipitation_mm, Type: DECIMAL}
+              - {Name: avg_solar_radiation, Type: DECIMAL}
+              - {Name: avg_close_usd_60kg, Type: DECIMAL}
+              - {Name: YEAR, Type: INTEGER}
+              - {Name: MM, Type: INTEGER}
+      Permissions:
+        - Principal: !Ref QuickSightPrincipalArn
+          Actions:
+            - quicksight:DescribeDataSet
+            - quicksight:DescribeDataSetPermissions
+            - quicksight:PassDataSet
+            - quicksight:DescribeIngestion
+            - quicksight:ListIngestions
+            - quicksight:UpdateDataSet
+            - quicksight:UpdateDataSetPermissions
+            - quicksight:DeleteDataSet
+            - quicksight:CreateIngestion
+            - quicksight:CancelIngestion
+
+  QuickSightIotDataset:
+    Type: AWS::QuickSight::DataSet
+    Condition: IsQuickSightEnabled
+    Properties:
+      AwsAccountId: !Ref AWS::AccountId
+      DataSetId: ${self:service}-iot-gold-${sls:stage}
+      Name: ${self:service}-iot-gold-${sls:stage}
+      ImportMode: DIRECT_QUERY
+      PhysicalTableMap:
+        IotGold:
+          RelationalTable:
+            DataSourceArn: !GetAtt QuickSightAthenaDataSource.Arn
+            Catalog: AwsDataCatalog
+            Schema: !Ref GlueDatabase
+            Name: coffee_iot_gold
+            InputColumns:
+              - {Name: sensor_id, Type: STRING}
+              - {Name: location, Type: STRING}
+              - {Name: record_count, Type: INTEGER}
+              - {Name: avg_temp_max, Type: DECIMAL}
+              - {Name: avg_temp_min, Type: DECIMAL}
+              - {Name: avg_humidity, Type: DECIMAL}
+              - {Name: avg_solar_radiation, Type: DECIMAL}
+              - {Name: total_precipitation_mm, Type: DECIMAL}
+              - {Name: avg_soil_ph, Type: DECIMAL}
+              - {Name: avg_soil_moisture, Type: DECIMAL}
+              - {Name: avg_n, Type: DECIMAL}
+              - {Name: avg_p, Type: DECIMAL}
+              - {Name: avg_k, Type: DECIMAL}
+              - {Name: YEAR, Type: INTEGER}
+              - {Name: MM, Type: INTEGER}
+      Permissions:
+        - Principal: !Ref QuickSightPrincipalArn
+          Actions:
+            - quicksight:DescribeDataSet
+            - quicksight:DescribeDataSetPermissions
+            - quicksight:PassDataSet
+            - quicksight:DescribeIngestion
+            - quicksight:ListIngestions
+            - quicksight:UpdateDataSet
+            - quicksight:UpdateDataSetPermissions
+            - quicksight:DeleteDataSet
+            - quicksight:CreateIngestion
+            - quicksight:CancelIngestion
+
+Outputs:
+  QuickSightAthenaDataSourceArn:
+    Condition: IsQuickSightEnabled
+    Description: QuickSight Athena data source ARN.
+    Value: !GetAtt QuickSightAthenaDataSource.Arn
+  QuickSightHistoricalDatasetArn:
+    Condition: IsQuickSightEnabled
+    Description: QuickSight historical Gold dataset ARN.
+    Value: !GetAtt QuickSightHistoricalDataset.Arn
+  QuickSightIotDatasetArn:
+    Condition: IsQuickSightEnabled
+    Description: QuickSight IoT Gold dataset ARN.
+    Value: !GetAtt QuickSightIotDataset.Arn

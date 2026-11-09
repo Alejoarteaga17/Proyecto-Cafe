@@ -1,0 +1,66 @@
+name: DataOps - publish and reprocess
+
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: "Operation to execute"
+        required: true
+        type: choice
+        options: [publish-glue, reprocess]
+      workflow:
+        description: "Independent ETL workflow for reprocessing"
+        required: true
+        default: historical
+        type: choice
+        options: [historical, iot]
+      stage:
+        description: "AWS stage"
+        required: true
+        default: dev
+        type: choice
+        options: [dev, test, prod]
+      input_prefix:
+        description: "Optional Bronze prefix; defaults to the selected workflow"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: dataops-${{ inputs.stage }}-${{ inputs.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.stage }}
+    env:
+      AWS_REGION: us-east-1
+      DEPLOY_APP: coffee-cultivation
+      DATA_LAKE_BUCKET: ${{ vars.DATA_LAKE_BUCKET }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Publish both Glue workflows
+        if: inputs.operation == 'publish-glue'
+        run: bash scripts/dataops/publish-glue.sh "${{ inputs.stage }}"
+
+      - name: Start selected ETL workflow
+        if: inputs.operation == 'reprocess'
+        env:
+          INPUT_PREFIX: ${{ inputs.input_prefix }}
+        run: |
+          bash scripts/dataops/start-etl.sh \
+            "${{ inputs.workflow }}" \
+            "${{ inputs.stage }}" \
+            "$INPUT_PREFIX"

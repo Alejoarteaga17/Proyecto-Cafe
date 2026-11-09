@@ -1,0 +1,111 @@
+ValidateAndStore:
+  name: ${self:custom.servicePrefix}-ValidateAndStore
+  handler: src/validate_and_store/handler.handler
+  role: !GetAtt ValidateAndStoreRole.Arn
+  timeout: 25
+  memorySize: 256
+  package:
+    patterns:
+    - ../src/common/**
+    - ../src/validate_and_store/**
+  environment:
+    BRONZE_BUCKET_NAME: ${self:custom.s3.dataLakeBucket.name}
+    HISTORICAL_STATE_MACHINE_ARN: ${env:HISTORICAL_STATE_MACHINE_ARN, ''}
+  events:
+    - http:
+        path: /coffee-historical-data
+        method: post
+        private: true
+        cors: true
+
+Cors:
+  name: ${self:custom.servicePrefix}-Cors
+  handler: src/validate_and_store/cors_handler.handler
+  timeout: 5
+  memorySize: 128
+  package:
+    patterns:
+    - ../src/validate_and_store/**
+  events:
+    - http:
+        path: /coffee-historical-data
+        method: options
+        private: false
+
+DashboardEmbed:
+  name: ${self:custom.servicePrefix}-DashboardEmbed
+  handler: src/dashboard/handler.handler
+  role: !GetAtt DashboardEmbedRole.Arn
+  timeout: 10
+  memorySize: 128
+  package:
+    patterns:
+    - ../src/dashboard/**
+  environment:
+    QUICKSIGHT_ACCOUNT_ID: ${env:AWS_ACCOUNT_ID, '688060219062'}
+    QUICKSIGHT_DASHBOARD_ID: ${env:QUICKSIGHT_DASHBOARD_ID, 'coffee-cultivation-dashboard-dev'}
+    QUICKSIGHT_USER_ARN: ${env:QUICKSIGHT_USER_ARN, 'arn:aws:quicksight:us-east-1:688060219062:user/default/688060219062'}
+    QUICKSIGHT_SESSION_LIFETIME_MINUTES: ${env:QUICKSIGHT_SESSION_LIFETIME_MINUTES, '60'}
+    QUICKSIGHT_ALLOWED_DOMAINS: ${env:QUICKSIGHT_ALLOWED_DOMAINS, 'http://localhost:8080'}
+  events:
+    - http:
+        path: coffee-dashboard/embed-url
+        method: get
+        private: true
+        cors: true
+
+DashboardEmbedCors:
+  name: ${self:custom.servicePrefix}-DashboardEmbedCors
+  handler: src/validate_and_store/cors_handler.handler
+  timeout: 5
+  memorySize: 128
+  package:
+    patterns:
+    - ../src/validate_and_store/**
+  events:
+    - http:
+        path: coffee-dashboard/embed-url
+        method: options
+        private: false
+
+IotSimulation:
+  name: ${self:custom.servicePrefix}-IotSimulation
+  handler: src/iot_simulator/handler.handler
+  role: !GetAtt IotSimulationRole.Arn
+  timeout: 10
+  memorySize: 128
+  package:
+    patterns:
+    - ../src/iot_simulator/**
+  environment:
+    SIMULATOR_WORKER_FUNCTION_NAME: ${self:custom.servicePrefix}-IotSimulationWorker
+  events:
+    - http:
+        path: coffee-iot/simulate
+        method: post
+        private: true
+        cors: true
+
+IotSimulationCors:
+  name: ${self:custom.servicePrefix}-IotSimulationCors
+  handler: src/validate_and_store/cors_handler.handler
+  timeout: 5
+  memorySize: 128
+  package:
+    patterns:
+    - ../src/validate_and_store/**
+  events:
+    - http:
+        path: coffee-iot/simulate
+        method: options
+        private: false
+
+IotSimulationWorker:
+  name: ${self:custom.servicePrefix}-IotSimulationWorker
+  handler: src/iot_simulator/handler.worker
+  role: !GetAtt IotSimulationRole.Arn
+  timeout: 900
+  memorySize: 128
+  package:
+    patterns:
+    - ../src/iot_simulator/**

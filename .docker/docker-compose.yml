@@ -1,0 +1,22 @@
+services:
+  coffee-cultivation:
+    container_name: 'CoffeeCultivation'
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: img-root
+    env_file:
+      - ../.envs/aws.env
+      - ../.envs/sls.env
+    volumes:
+      - ..:/app
+      - coffee-cultivation-bashhistory:/commandhistory
+    working_dir: /app
+    restart: unless-stopped
+    command:
+      - /bin/sh
+      - -c
+      - sleep infinity
+
+volumes:
+  coffee-cultivation-bashhistory:

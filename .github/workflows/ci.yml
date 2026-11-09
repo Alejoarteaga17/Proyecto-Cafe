@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install test dependencies
+        run: python -m pip install --upgrade pip pytest boto3
+
+      - name: Validate code and tests
+        run: bash scripts/dataops/validate.sh
+
+      - name: Validate YAML documents
+        run: |
+          python -m pip install pyyaml
+          python - <<'PY'
+          from pathlib import Path
+          import yaml
+
+          class CloudFormationLoader(yaml.SafeLoader):
+              pass
+
+          def ignore_cloudformation_tag(loader, tag_suffix, node):
+              if isinstance(node, yaml.ScalarNode):
+                  return loader.construct_scalar(node)
+              if isinstance(node, yaml.SequenceNode):
+                  return loader.construct_sequence(node)
+              return loader.construct_mapping(node)
+
+          CloudFormationLoader.add_multi_constructor("!", ignore_cloudformation_tag)
+          for path in Path(".").rglob("*"):
+              if path.is_file() and path.suffix in {".yml", ".yaml"} and ".agents" not in path.parts:
+                  list(yaml.load_all(path.read_text(encoding="utf-8"), Loader=CloudFormationLoader))
+                  print(path)
+          PY

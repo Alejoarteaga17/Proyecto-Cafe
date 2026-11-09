@@ -1,0 +1,37 @@
+service: backend-batch
+frameworkVersion: '^4.6.2'
+configValidationMode: error
+
+provider:
+  name: aws
+  stage: dev
+  region: us-east-1
+  runtime: python3.13
+  architecture: arm64
+  stackName: ${env:DEPLOY_APP, 'coffee-cultivation'}-${self:service}
+  apiGateway:
+    apiKeys:
+      - ${self:custom.servicePrefix}-key
+
+package:
+  individually: true
+  patterns:
+    - '!./**'
+
+resources:
+  - ${file(iam.yml)}
+
+functions: ${file(functions.yml)}
+
+custom:
+  stage: ${opt:stage, self:provider.stage}
+  servicePrefix: ${env:DEPLOY_APP, 'coffee-cultivation'}-${self:service}
+  developer: ${env:DEVELOPER, 'aaccode'}
+  s3:
+    deploymentBucketName:
+      dev: ${self:provider.region}-cfn-${self:service}-${self:custom.stage}-${self:custom.developer}-deploys
+      test: ${self:provider.region}-cfn-${self:service}-${self:custom.stage}-deploys
+      prod: ${self:provider.region}-cfn-${self:service}-${self:custom.stage}-deploys
+    dataLakeBucket:
+      name: ${ssm:/${env:DEPLOY_APP, 'coffee-cultivation'}-storage/DataLakeBucketName}
+      arn: ${ssm:/${env:DEPLOY_APP, 'coffee-cultivation'}-storage/DataLakeBucketArn}
