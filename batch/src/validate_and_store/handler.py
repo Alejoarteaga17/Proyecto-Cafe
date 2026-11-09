@@ -40,9 +40,14 @@ class _UnavailableS3Client:
         raise RuntimeError('boto3 is required to upload to S3')
 
 
-s3_client = boto3.client('s3') if boto3 else _UnavailableS3Client()
+AWS_REGION = os.environ.get('AWS_REGION') or os.environ.get('AWS_DEFAULT_REGION', 'us-east-1')
+
+s3_client = (
+    boto3.client('s3', region_name=AWS_REGION) if boto3 else _UnavailableS3Client()
+)
 stepfunctions_client = (
-    boto3.client('stepfunctions') if boto3 else _UnavailableS3Client()
+    boto3.client('stepfunctions', region_name=AWS_REGION)
+    if boto3 else _UnavailableS3Client()
 )
 
 BRONZE_BUCKET_NAME = os.environ.get('BRONZE_BUCKET_NAME', 'coffee-data-lake-bronze')
