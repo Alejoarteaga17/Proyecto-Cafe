@@ -78,6 +78,13 @@ Resources:
                 Action:
                   - sts:GetCallerIdentity
                 Resource: "*"
+              - Sid: PublishFrontend
+                Effect: Allow
+                Action:
+                  - cloudfront:CreateInvalidation
+                  - cloudfront:GetDistribution
+                  - cloudfront:GetInvalidation
+                Resource: "*"
               - Sid: StartProjectDataOps
                 Effect: Allow
                 Action:

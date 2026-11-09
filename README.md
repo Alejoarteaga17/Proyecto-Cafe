@@ -70,7 +70,8 @@ se hayan ejecutado en una cuenta AWS.
   infraestructura IoT Core → Data Firehose → S3 Bronze.
 - **`batch/infrastructure/serverless/data-platform/`**: Glue, dos state
   machines Step Functions, Glue Data Catalog, Athena y QuickSight opcional.
-- **`frontend/`**: interfaz ligera para pruebas de carga CSV y validación del backend.
+- **`frontend/`**: interfaz ligera para pruebas de carga CSV y validación del backend,
+  publicada en un bucket S3 privado detrás de CloudFront.
 - **`docs/`**: arquitectura, contratos, diccionario, catálogo, lineage, RACI,
   optimizaciones y estado de aceptación.
 - **`batch/benchmarks/`**: consultas de Athena para comparar bytes escaneados y tiempo antes/después de las optimizaciones.
@@ -180,6 +181,35 @@ Los stacks dependen de parámetros SSM y del bucket creado por el stack
    serverless deploy --stage dev
    ```
 
+   El stack `storage` también crea el bucket privado del frontend y una
+   distribución CloudFront. Después del despliegue, publica los archivos con:
+
+   ```bash
+   bucket=$(aws ssm get-parameter \
+     --name "/coffee-cultivation-storage/FrontendBucketName" \
+     --query 'Parameter.Value' --output text)
+   aws s3 sync /app/frontend "s3://${bucket}" --delete
+   distribution_id=$(aws cloudformation describe-stack-resources \
+     --stack-name coffee-cultivation-storage \
+     --logical-resource-ids FrontendDistribution \
+     --query 'StackResources[0].PhysicalResourceId' --output text)
+   aws cloudfront create-invalidation \
+     --distribution-id "$distribution_id" --paths '/*'
+   ```
+
+   La URL pública se obtiene con:
+
+   ```bash
+   aws ssm get-parameter \
+     --name "/coffee-cultivation-storage/FrontendDistributionDomainName" \
+     --query 'Parameter.Value' --output text
+   ```
+
+   El workflow `CD - AWS deployment` ejecuta automáticamente la publicación y
+   la invalidación de CloudFront después de desplegar la API. Para `dev` se
+   conservan los nombres históricos de los stacks; `test` y `prod` usan el
+   sufijo del stage (`coffee-cultivation-storage-test`, por ejemplo).
+
 2. **Publicar los scripts y el código compartido de Glue** en el bucket
    creado en el paso anterior. Sustituye `<data-lake-bucket>` por el nombre
    real del bucket almacenado en el parámetro
@@ -243,6 +273,13 @@ Los stacks dependen de parámetros SSM y del bucket creado por el stack
    serverless print --stage dev
    serverless deploy --stage dev
    ```
+
+En CI/CD, el workflow obtiene el dominio CloudFront, el ARN de
+`HistoricalEtlStateMachine` y el identificador de API Gateway después de crear
+los stacks. Genera `frontend/config.js` para el stage seleccionado, configura
+`QUICKSIGHT_ALLOWED_DOMAINS` con el dominio HTTPS de CloudFront y publica el
+frontend al final del flujo. No se deben guardar API Keys ni credenciales AWS
+en el repositorio.
 
 Después del despliegue, ejecuta el simulador según la guía de
 [`streaming/README.md`](streaming/README.md). El modo `--publish` usa las

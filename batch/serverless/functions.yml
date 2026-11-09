@@ -1,5 +1,5 @@
 ValidateAndStore:
-  name: ${self:custom.servicePrefix}-ValidateAndStore
+  name: ${self:custom.servicePrefix.${self:custom.stage}}-ValidateAndStore
   handler: src/validate_and_store/handler.handler
   role: !GetAtt ValidateAndStoreRole.Arn
   timeout: 25
@@ -19,7 +19,7 @@ ValidateAndStore:
         cors: true
 
 Cors:
-  name: ${self:custom.servicePrefix}-Cors
+  name: ${self:custom.servicePrefix.${self:custom.stage}}-Cors
   handler: src/validate_and_store/cors_handler.handler
   timeout: 5
   memorySize: 128
@@ -33,7 +33,7 @@ Cors:
         private: false
 
 DashboardEmbed:
-  name: ${self:custom.servicePrefix}-DashboardEmbed
+  name: ${self:custom.servicePrefix.${self:custom.stage}}-DashboardEmbed
   handler: src/dashboard/handler.handler
   role: !GetAtt DashboardEmbedRole.Arn
   timeout: 10
@@ -55,7 +55,7 @@ DashboardEmbed:
         cors: true
 
 DashboardEmbedCors:
-  name: ${self:custom.servicePrefix}-DashboardEmbedCors
+  name: ${self:custom.servicePrefix.${self:custom.stage}}-DashboardEmbedCors
   handler: src/validate_and_store/cors_handler.handler
   timeout: 5
   memorySize: 128
@@ -69,7 +69,7 @@ DashboardEmbedCors:
         private: false
 
 IotSimulation:
-  name: ${self:custom.servicePrefix}-IotSimulation
+  name: ${self:custom.servicePrefix.${self:custom.stage}}-IotSimulation
   handler: src/iot_simulator/handler.handler
   role: !GetAtt IotSimulationRole.Arn
   timeout: 10
@@ -78,7 +78,7 @@ IotSimulation:
     patterns:
     - ../src/iot_simulator/**
   environment:
-    SIMULATOR_WORKER_FUNCTION_NAME: ${self:custom.servicePrefix}-IotSimulationWorker
+    SIMULATOR_WORKER_FUNCTION_NAME: ${self:custom.servicePrefix.${self:custom.stage}}-IotSimulationWorker
   events:
     - http:
         path: coffee-iot/simulate
@@ -87,7 +87,7 @@ IotSimulation:
         cors: true
 
 IotSimulationCors:
-  name: ${self:custom.servicePrefix}-IotSimulationCors
+  name: ${self:custom.servicePrefix.${self:custom.stage}}-IotSimulationCors
   handler: src/validate_and_store/cors_handler.handler
   timeout: 5
   memorySize: 128
@@ -101,7 +101,7 @@ IotSimulationCors:
         private: false
 
 IotSimulationWorker:
-  name: ${self:custom.servicePrefix}-IotSimulationWorker
+  name: ${self:custom.servicePrefix.${self:custom.stage}}-IotSimulationWorker
   handler: src/iot_simulator/handler.worker
   role: !GetAtt IotSimulationRole.Arn
   timeout: 900

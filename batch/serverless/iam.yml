@@ -2,7 +2,7 @@ Resources:
   ValidateAndStoreRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: ${self:custom.servicePrefix}-ValidateAndStore
+      RoleName: ${self:custom.servicePrefix.${self:custom.stage}}-ValidateAndStore
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -13,7 +13,7 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
       Policies:
-        - PolicyName: ${self:custom.servicePrefix}-ValidateAndStore
+        - PolicyName: ${self:custom.servicePrefix.${self:custom.stage}}-ValidateAndStore
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
@@ -28,7 +28,7 @@ Resources:
   DashboardEmbedRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: ${self:custom.servicePrefix}-DashboardEmbed
+      RoleName: ${self:custom.servicePrefix.${self:custom.stage}}-DashboardEmbed
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -39,7 +39,7 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
       Policies:
-        - PolicyName: ${self:custom.servicePrefix}-DashboardEmbed
+        - PolicyName: ${self:custom.servicePrefix.${self:custom.stage}}-DashboardEmbed
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
@@ -51,7 +51,7 @@ Resources:
   IotSimulationRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: ${self:custom.servicePrefix}-IotSimulation
+      RoleName: ${self:custom.servicePrefix.${self:custom.stage}}-IotSimulation
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -62,7 +62,7 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
       Policies:
-        - PolicyName: ${self:custom.servicePrefix}-IotSimulation
+        - PolicyName: ${self:custom.servicePrefix.${self:custom.stage}}-IotSimulation
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
@@ -73,4 +73,4 @@ Resources:
                 Resource: '*'
               - Effect: Allow
                 Action: lambda:InvokeFunction
-                Resource: !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${self:custom.servicePrefix}-IotSimulationWorker
+                Resource: !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${self:custom.servicePrefix.${self:custom.stage}}-IotSimulationWorker

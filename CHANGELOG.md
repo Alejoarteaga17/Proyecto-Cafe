@@ -48,6 +48,11 @@
 
 ### Changed
 
+- El despliegue CI/CD ahora separa los stacks por stage, propaga el ARN de
+  `HistoricalEtlStateMachine`, autoriza el dominio CloudFront para QuickSight y
+  genera la configuración de endpoints del frontend antes de publicarlo.
+- El gate de validación verifica JavaScript inline, referencias ARIA y sintaxis
+  de los scripts de publicación.
 - Job 1 ahora registra y actualiza las particiones `YEAR/MM` de Silver en Glue
   Data Catalog, habilitando consultas de Athena sobre el histórico validado.
 - Job 1 ahora valida que `DOY` corresponda a `Date`, controla años no

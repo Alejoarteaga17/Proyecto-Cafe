@@ -48,8 +48,17 @@ la state machine correspondiente. Requiere `states:StartExecution`,
 Configurar en cada GitHub environment:
 
 - Secret `AWS_DEPLOY_ROLE_ARN`, confiado mediante GitHub OIDC.
+- Variables `AWS_ACCOUNT_ID`, `QUICKSIGHT_DASHBOARD_ID` y
+  `QUICKSIGHT_USER_ARN` para la configuración de QuickSight.
 - Aprobación obligatoria para `prod`.
 - Variable opcional `DATA_LAKE_BUCKET`.
+
+El workflow `CD - AWS deployment` valida esas tres variables y despliega el
+stack `data-platform` con `QuickSightEnabled=true`, usando
+`QUICKSIGHT_USER_ARN` como `QuickSightPrincipalArn`. Esto crea o actualiza la
+fuente Athena y los datasets de QuickSight; el dashboard debe existir o
+publicarse separadamente con el contrato de
+`docs/quicksight-dashboard-definition.json`.
 
 La configuración AWS ya está creada en la cuenta de desarrollo:
 

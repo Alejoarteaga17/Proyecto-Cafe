@@ -8,10 +8,10 @@ provider:
   region: us-east-1
   runtime: python3.13
   architecture: arm64
-  stackName: ${env:DEPLOY_APP, 'coffee-cultivation'}-${self:service}
+  stackName: ${self:custom.stackName.${self:custom.stage}}
   apiGateway:
     apiKeys:
-      - ${self:custom.servicePrefix}-key
+      - ${self:custom.servicePrefix.${self:custom.stage}}-key
 
 package:
   individually: true
@@ -25,7 +25,18 @@ functions: ${file(functions.yml)}
 
 custom:
   stage: ${opt:stage, self:provider.stage}
-  servicePrefix: ${env:DEPLOY_APP, 'coffee-cultivation'}-${self:service}
+  stackName:
+    dev: ${env:DEPLOY_APP, 'coffee-cultivation'}-${self:service}
+    test: ${env:DEPLOY_APP, 'coffee-cultivation'}-${self:service}-test
+    prod: ${env:DEPLOY_APP, 'coffee-cultivation'}-${self:service}-prod
+  storageStackName:
+    dev: ${env:DEPLOY_APP, 'coffee-cultivation'}-storage
+    test: ${env:DEPLOY_APP, 'coffee-cultivation'}-storage-test
+    prod: ${env:DEPLOY_APP, 'coffee-cultivation'}-storage-prod
+  servicePrefix:
+    dev: ${env:DEPLOY_APP, 'coffee-cultivation'}-${self:service}
+    test: ${env:DEPLOY_APP, 'coffee-cultivation'}-${self:service}-test
+    prod: ${env:DEPLOY_APP, 'coffee-cultivation'}-${self:service}-prod
   developer: ${env:DEVELOPER, 'aaccode'}
   s3:
     deploymentBucketName:
@@ -33,5 +44,5 @@ custom:
       test: ${self:provider.region}-cfn-${self:service}-${self:custom.stage}-deploys
       prod: ${self:provider.region}-cfn-${self:service}-${self:custom.stage}-deploys
     dataLakeBucket:
-      name: ${ssm:/${env:DEPLOY_APP, 'coffee-cultivation'}-storage/DataLakeBucketName}
-      arn: ${ssm:/${env:DEPLOY_APP, 'coffee-cultivation'}-storage/DataLakeBucketArn}
+      name: ${ssm:/${self:custom.storageStackName.${self:custom.stage}}/DataLakeBucketName}
+      arn: ${ssm:/${self:custom.storageStackName.${self:custom.stage}}/DataLakeBucketArn}

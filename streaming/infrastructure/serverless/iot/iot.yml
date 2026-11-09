@@ -2,7 +2,7 @@ Resources:
   SensorThing:
     Type: AWS::IoT::Thing
     Properties:
-      ThingName: ${self:custom.servicePrefix}-sensor-simulator
+      ThingName: ${self:custom.servicePrefix.${self:custom.stage}}-sensor-simulator
       AttributePayload:
         Attributes:
           device_type: coffee-sensor
@@ -11,7 +11,7 @@ Resources:
   SensorReadingsPolicy:
     Type: AWS::IoT::Policy
     Properties:
-      PolicyName: ${self:custom.servicePrefix}-sensor-readings-${self:custom.stage}
+      PolicyName: ${self:custom.servicePrefix.${self:custom.stage}}-sensor-readings-${self:custom.stage}
       PolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -39,7 +39,7 @@ Resources:
   SensorReadingsTopicRuleRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: ${self:custom.servicePrefix}-TopicRule
+      RoleName: ${self:custom.servicePrefix.${self:custom.stage}}-TopicRule
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -48,7 +48,7 @@ Resources:
               Service: iot.amazonaws.com
             Action: sts:AssumeRole
       Policies:
-        - PolicyName: ${self:custom.servicePrefix}-TopicRule
+        - PolicyName: ${self:custom.servicePrefix.${self:custom.stage}}-TopicRule
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
@@ -107,7 +107,7 @@ Resources:
   FirehoseDeliveryRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: ${self:custom.servicePrefix}-FirehoseDelivery
+      RoleName: ${self:custom.servicePrefix.${self:custom.stage}}-FirehoseDelivery
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -116,7 +116,7 @@ Resources:
               Service: firehose.amazonaws.com
             Action: sts:AssumeRole
       Policies:
-        - PolicyName: ${self:custom.servicePrefix}-FirehoseS3
+        - PolicyName: ${self:custom.servicePrefix.${self:custom.stage}}-FirehoseS3
           PolicyDocument:
             Version: '2012-10-17'
             Statement:

@@ -16,9 +16,14 @@ API Key en memoria.
   solicitudes CORS.
 
 La interfaz trae una URL de API como valor inicial para facilitar las pruebas,
-pero debes verificarla con `serverless info --stage dev` y reemplazarla si
-corresponde a otro stage, cuenta o despliegue. La API Key siempre debe
-introducirse manualmente.
+pero debes verificarla con `serverless info --stage dev` si corresponde a otro
+stage, cuenta o despliegue. El despliegue CI/CD genera
+`frontend/config.js` con el endpoint del stage antes de publicarlo. La API Key
+siempre debe introducirse manualmente.
+
+Para despliegues `test` y `prod`, el stack de storage usa nombres con sufijo de
+stage y sus parámetros SSM siguen el mismo nombre. No copies manualmente la
+URL de `dev` a otro ambiente.
 
 ## Cómo usarla
 

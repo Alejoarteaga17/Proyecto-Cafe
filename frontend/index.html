@@ -6,127 +6,9 @@
     <meta name="page-type" content="software" />
     <meta name="site-kind" content="software" />
     <title>Cultivo de Café</title>
+    <script src="config.js"></script>
     <script src="https://unpkg.com/amazon-quicksight-embedding-sdk@2.10.2/dist/quicksight-embedding-js-sdk.min.js"></script>
     <style>
-      :root {
-        --background: #f4f7f2;
-        --card: #fff;
-        --primary: #28643a;
-        --primary-dark: #1d4d2b;
-        --text: #1c2b20;
-        --muted: #637064;
-        --border: #d8e2d8;
-        --error: #a52f2f;
-        --success: #236b3b;
-      }
-      * { box-sizing: border-box; }
-      body {
-        margin: 0;
-        padding: 24px;
-        background: var(--background);
-        color: var(--text);
-        font-family: Arial, Helvetica, sans-serif;
-      }
-      main { width: min(1500px, 100%); margin: 0 auto; }
-      h1 { margin: 0 0 6px; color: var(--primary-dark); }
-      h2 { margin-top: 0; color: var(--primary-dark); }
-      .intro { margin: 0; color: var(--muted); line-height: 1.5; }
-      .header { margin-bottom: 18px; }
-      .tabs {
-        display: flex;
-        gap: 8px;
-        margin-bottom: 16px;
-        border-bottom: 1px solid var(--border);
-      }
-      .access-card { margin-bottom: 16px; }
-      .tab {
-        margin: 0;
-        border-radius: 8px 8px 0 0;
-        background: transparent;
-        color: var(--primary-dark);
-      }
-      .tab.active { background: var(--primary); color: #fff; }
-      .panel { display: none; }
-      .panel.active { display: block; }
-      .card {
-        padding: 24px;
-        background: var(--card);
-        border: 1px solid var(--border);
-        border-radius: 16px;
-        box-shadow: 0 8px 24px rgba(28, 43, 32, 0.08);
-      }
-      label { display: block; margin: 16px 0 6px; font-weight: 700; }
-      input {
-        width: 100%;
-        padding: 11px;
-        border: 1px solid #b9c9ba;
-        border-radius: 8px;
-        font: inherit;
-      }
-      button {
-        padding: 11px 16px;
-        border: 0;
-        border-radius: 8px;
-        background: var(--primary);
-        color: white;
-        cursor: pointer;
-        font-weight: 700;
-      }
-      button:hover { background: var(--primary-dark); }
-      button:disabled { cursor: wait; opacity: 0.65; }
-      .drop-zone {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 8px;
-        padding: 30px 18px;
-        border: 2px dashed #9fbea3;
-        border-radius: 10px;
-        background: #f8fbf8;
-        color: var(--muted);
-        cursor: pointer;
-        text-align: center;
-      }
-      .drop-zone strong { color: var(--primary-dark); }
-      .drop-zone.drag-over { border-color: var(--primary); background: #eef8ef; }
-      .actions { margin-top: 22px; }
-      .status { min-height: 24px; margin-top: 16px; line-height: 1.45; }
-      .status.error { color: var(--error); }
-      .status.success { color: var(--success); }
-      pre {
-        max-height: 240px;
-        overflow: auto;
-        padding: 14px;
-        border-radius: 8px;
-        background: #172019;
-        color: #e5eee6;
-        white-space: pre-wrap;
-        word-break: break-word;
-      }
-      .warning {
-        margin-top: 22px;
-        padding: 12px;
-        border-left: 4px solid #c7972d;
-        background: #fff9e8;
-        color: #604b1c;
-        font-size: 0.9rem;
-        line-height: 1.45;
-      }
-      #dashboardContainer {
-        min-height: 760px;
-        margin-top: 16px;
-        overflow: hidden;
-        padding: 0;
-      }
-      #dashboardContainer iframe { width: 100%; min-height: 760px; border: 0; }
-      .dashboard-controls { max-width: 760px; }
-      .simulation-controls { max-width: 760px; }
-      @media (max-width: 720px) {
-        body { padding: 12px; }
-        .tabs { overflow-x: auto; }
-        #dashboardContainer, #dashboardContainer iframe { min-height: 620px; }
-      }
-
       /* Layout visual de ancho completo */
       :root {
         --background: #f5f7f4;
@@ -190,6 +72,7 @@
       .access-card label { margin-top: 0; }
       .panel { display: none; }
       .panel.active { display: block; }
+      .panel[hidden] { display: none; }
       .card {
         width: 100%;
         padding: clamp(22px, 3vw, 36px);
@@ -656,10 +539,10 @@
         <p class="intro">Publica datos históricos y visualiza el dashboard en la misma aplicación.</p>
       </header>
 
-      <nav class="tabs" aria-label="Secciones de la aplicación">
-        <button class="tab active" data-tab="upload" type="button">Publicar CSV</button>
-        <button class="tab" data-tab="simulation" type="button">Simulación IoT</button>
-        <button class="tab" data-tab="dashboard" type="button">Dashboard</button>
+      <nav class="tabs" role="tablist" aria-label="Secciones de la aplicación">
+        <button id="upload-tab" class="tab active" data-tab="upload" role="tab" aria-controls="upload" aria-selected="true" type="button">Publicar CSV</button>
+        <button id="simulation-tab" class="tab" data-tab="simulation" role="tab" aria-controls="simulation" aria-selected="false" tabindex="-1" type="button">Simulación IoT</button>
+        <button id="dashboard-tab" class="tab" data-tab="dashboard" role="tab" aria-controls="dashboard" aria-selected="false" tabindex="-1" type="button">Dashboard</button>
       </nav>
 
       <section class="card access-card">
@@ -668,12 +551,12 @@
         <p class="intro">La misma clave se utiliza para publicar el CSV y cargar el dashboard.</p>
       </section>
 
-      <section id="upload" class="panel active" aria-labelledby="upload-tab">
+      <section id="upload" class="panel active" role="tabpanel" aria-labelledby="upload-tab" tabindex="0">
         <div class="card">
           <h2>Publicar CSV histórico</h2>
           <p class="intro">Lambda validará el archivo antes de guardarlo en S3 Bronze.</p>
-          <label for="csvFile">Archivo CSV</label>
-          <div id="dropZone" class="drop-zone" role="button" tabindex="0" aria-controls="csvFile">
+          <label id="csvFileLabel" for="csvFile">Archivo CSV</label>
+          <div id="dropZone" class="drop-zone" role="group" aria-labelledby="csvFileLabel" aria-describedby="selectedFile">
             <strong>Arrastra y suelta tu CSV aquí</strong>
             <span>o haz clic para seleccionarlo desde tu equipo</span>
             <button id="chooseFileButton" type="button">Seleccionar archivo</button>
@@ -692,7 +575,7 @@
         </div>
       </section>
 
-      <section id="simulation" class="panel" aria-labelledby="simulation-tab">
+      <section id="simulation" class="panel" role="tabpanel" aria-labelledby="simulation-tab" tabindex="0" hidden>
         <div class="card simulation-controls">
           <h2>Generar simulación IoT</h2>
           <p class="intro">Genera lecturas y publícalas en AWS IoT Core usando el mismo flujo del simulador de terminal.</p>
@@ -717,7 +600,7 @@
         </div>
       </section>
 
-      <section id="dashboard" class="panel" aria-labelledby="dashboard-tab">
+      <section id="dashboard" class="panel" role="tabpanel" aria-labelledby="dashboard-tab" tabindex="0" hidden>
         <div class="card dashboard-controls">
           <h2>Dashboard de Cultivo de Café</h2>
           <p class="intro">Datos Gold históricos y telemetría IoT en QuickSight.</p>
@@ -733,7 +616,7 @@
           </div>
           <div class="warning">La API Key solo permanece en memoria durante esta sesión del navegador.</div>
         </div>
-        <section id="dashboardContainer" class="card" aria-label="Dashboard QuickSight"></section>
+        <section id="dashboardContainer" class="card" aria-label="Dashboard QuickSight" aria-live="polite"></section>
       </section>
     </main>
 
@@ -760,6 +643,12 @@
       const dashboardStatus = document.getElementById('dashboardStatus');
       const dashboardContainer = document.getElementById('dashboardContainer');
       const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
+      const apiBaseUrl = (window.COFFEE_CONFIG?.apiBaseUrl || '').replace(/\/+$/, '');
+      if (apiBaseUrl) {
+        uploadApiUrlInput.value = `${apiBaseUrl}/coffee-historical-data`;
+        simulationApiUrlInput.value = `${apiBaseUrl}/coffee-iot/simulate`;
+        embedApiUrlInput.value = `${apiBaseUrl}/coffee-dashboard/embed-url`;
+      }
 
       function setStatus(element, message, type = '') {
         element.textContent = message;
@@ -767,13 +656,36 @@
       }
 
       function showTab(name, updateHash = true) {
-        tabs.forEach((tab) => tab.classList.toggle('active', tab.dataset.tab === name));
-        panels.forEach((panel) => panel.classList.toggle('active', panel.id === name));
+        tabs.forEach((tab) => {
+          const isActive = tab.dataset.tab === name;
+          tab.classList.toggle('active', isActive);
+          tab.setAttribute('aria-selected', String(isActive));
+          tab.tabIndex = isActive ? 0 : -1;
+        });
+        panels.forEach((panel) => {
+          const isActive = panel.id === name;
+          panel.classList.toggle('active', isActive);
+          panel.hidden = !isActive;
+        });
         document.body.classList.toggle('dashboard-mode', name === 'dashboard');
         if (updateHash) history.replaceState(null, '', `#${name}`);
       }
 
-      tabs.forEach((tab) => tab.addEventListener('click', () => showTab(tab.dataset.tab)));
+      tabs.forEach((tab, index) => {
+        tab.addEventListener('click', () => showTab(tab.dataset.tab));
+        tab.addEventListener('keydown', (event) => {
+          if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+          event.preventDefault();
+          const nextIndex = event.key === 'Home'
+            ? 0
+            : event.key === 'End'
+              ? tabs.length - 1
+              : (index + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length;
+          const nextTab = tabs[nextIndex];
+          showTab(nextTab.dataset.tab);
+          nextTab.focus();
+        });
+      });
       showTab(['dashboard', 'simulation'].includes(location.hash.slice(1)) ? location.hash.slice(1) : 'upload', false);
 
       function formatBytes(bytes) {
@@ -865,41 +777,6 @@
           return;
         }
 
-        async function startSimulation() {
-          let url;
-          try {
-            url = new URL(simulationApiUrlInput.value.trim());
-            if (!apiKeyInput.value.trim()) throw new Error('Introduce la API Key de API Gateway.');
-            const count = Number(simulationCountInput.value);
-            const interval = Number(simulationIntervalInput.value);
-            if (!Number.isInteger(count) || count < 1 || count > 100) throw new Error('La cantidad debe estar entre 1 y 100.');
-            if (!Number.isFinite(interval) || interval < 0 || interval > 60) throw new Error('El intervalo debe estar entre 0 y 60 segundos.');
-          } catch (error) {
-            setStatus(simulationStatus, error.message, 'error');
-            return;
-          }
-          simulateButton.disabled = true;
-          setStatus(simulationStatus, 'Iniciando simulación IoT...');
-          try {
-            const body = {
-              count: Number(simulationCountInput.value),
-              interval: Number(simulationIntervalInput.value),
-            };
-            if (simulationSeedInput.value.trim()) body.seed = Number(simulationSeedInput.value);
-            const response = await fetch(url, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'x-api-key': apiKeyInput.value.trim() },
-              body: JSON.stringify(body),
-            });
-            const result = await response.json();
-            if (!response.ok) throw new Error(result.message || `No se pudo iniciar la simulación (HTTP ${response.status}).`);
-            setStatus(simulationStatus, `Simulación iniciada: ${result.count} eventos cada ${result.interval}s. La publicación continúa en segundo plano.`, 'success');
-          } catch (error) {
-            setStatus(simulationStatus, error.message || 'No se pudo iniciar la simulación.', 'error');
-          } finally {
-            simulateButton.disabled = false;
-          }
-        }
         loadButton.disabled = true;
         dashboardContainer.replaceChildren();
         try {
@@ -932,15 +809,48 @@
         }
       }
 
+      async function startSimulation() {
+        let url;
+        try {
+          url = new URL(simulationApiUrlInput.value.trim());
+          if (!apiKeyInput.value.trim()) throw new Error('Introduce la API Key de API Gateway.');
+          const count = Number(simulationCountInput.value);
+          const interval = Number(simulationIntervalInput.value);
+          if (!Number.isInteger(count) || count < 1 || count > 100) throw new Error('La cantidad debe estar entre 1 y 100.');
+          if (!Number.isFinite(interval) || interval < 0 || interval > 60) throw new Error('El intervalo debe estar entre 0 y 60 segundos.');
+        } catch (error) {
+          setStatus(simulationStatus, error.message, 'error');
+          return;
+        }
+        simulateButton.disabled = true;
+        setStatus(simulationStatus, 'Iniciando simulación IoT...');
+        try {
+          const body = {
+            count: Number(simulationCountInput.value),
+            interval: Number(simulationIntervalInput.value),
+          };
+          if (simulationSeedInput.value.trim()) body.seed = Number(simulationSeedInput.value);
+          const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-api-key': apiKeyInput.value.trim() },
+            body: JSON.stringify(body),
+          });
+          const result = await response.json();
+          if (!response.ok) throw new Error(result.message || `No se pudo iniciar la simulación (HTTP ${response.status}).`);
+          setStatus(simulationStatus, `Simulación iniciada: ${result.count} eventos cada ${result.interval}s. La publicación continúa en segundo plano.`, 'success');
+        } catch (error) {
+          setStatus(simulationStatus, error.message || 'No se pudo iniciar la simulación.', 'error');
+        } finally {
+          simulateButton.disabled = false;
+        }
+      }
+
       csvFileInput.addEventListener('change', () => selectFile(csvFileInput.files[0]));
       chooseFileButton.addEventListener('click', (event) => {
         event.stopPropagation();
         csvFileInput.click();
       });
       dropZone.addEventListener('click', () => csvFileInput.click());
-      dropZone.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); csvFileInput.click(); }
-      });
       dropZone.addEventListener('dragover', (event) => { event.preventDefault(); dropZone.classList.add('drag-over'); });
       dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
       dropZone.addEventListener('drop', (event) => {
