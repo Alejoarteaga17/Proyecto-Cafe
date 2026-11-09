@@ -73,6 +73,12 @@ buckets que falten. El rol también incluye `s3:ListTagsForResource`, que
 CloudFormation requiere al inspeccionar etiquetas de buckets durante una
 actualización.
 
+El stack de plataforma usa los nombres `data-platform-dev`,
+`data-platform-test` y `data-platform-prod`. Esta convención conserva el stack
+existente y el export `data-platform-<stage>-IotStateMachineArn`, que importa
+la infraestructura IoT. No se debe crear un stack paralelo
+`coffee-cultivation-data-platform`.
+
 La configuración AWS ya está creada en la cuenta de desarrollo:
 
 - Stack: `coffee-cultivation-github-actions-oidc`

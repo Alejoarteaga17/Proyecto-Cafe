@@ -52,7 +52,7 @@ Resources:
             Schema: !Ref GlueDatabase
             Name: coffee_historical_gold
             InputColumns:
-              - {Name: Location, Type: STRING}
+              - {Name: location, Type: STRING}
               - {Name: record_count, Type: INTEGER}
               - {Name: avg_temp_max, Type: DECIMAL}
               - {Name: avg_temp_min, Type: DECIMAL}
@@ -60,8 +60,8 @@ Resources:
               - {Name: total_precipitation_mm, Type: DECIMAL}
               - {Name: avg_solar_radiation, Type: DECIMAL}
               - {Name: avg_close_usd_60kg, Type: DECIMAL}
-              - {Name: YEAR, Type: INTEGER}
-              - {Name: MM, Type: INTEGER}
+              - {Name: year, Type: INTEGER}
+              - {Name: mm, Type: INTEGER}
       Permissions:
         - Principal: !Ref QuickSightPrincipalArn
           Actions:
@@ -105,8 +105,8 @@ Resources:
               - {Name: avg_n, Type: DECIMAL}
               - {Name: avg_p, Type: DECIMAL}
               - {Name: avg_k, Type: DECIMAL}
-              - {Name: YEAR, Type: INTEGER}
-              - {Name: MM, Type: INTEGER}
+              - {Name: year, Type: INTEGER}
+              - {Name: mm, Type: INTEGER}
       Permissions:
         - Principal: !Ref QuickSightPrincipalArn
           Actions:

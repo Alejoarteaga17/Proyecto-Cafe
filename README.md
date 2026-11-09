@@ -208,7 +208,10 @@ Los stacks dependen de parámetros SSM y del bucket creado por el stack
    El workflow `CD - AWS deployment` ejecuta automáticamente la publicación y
    la invalidación de CloudFront después de desplegar la API. Para `dev` se
    conservan los nombres históricos de los stacks; `test` y `prod` usan el
-   sufijo del stage (`coffee-cultivation-storage-test`, por ejemplo).
+   sufijo del stage (`coffee-cultivation-storage-test`, por ejemplo). El stack
+   de plataforma conserva los nombres existentes `data-platform-dev`,
+   `data-platform-test` y `data-platform-prod` para evitar duplicar recursos y
+   exports que ya consume IoT.
 
    Si Storage falla con `Access denied for operation 'PutParameter'`, actualiza
    primero el stack de identidad OIDC con credenciales administrativas. El

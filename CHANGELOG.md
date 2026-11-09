@@ -12,6 +12,9 @@
   updating tagged buckets.
 - Configured all Serverless stacks to use their precreated, environment-scoped
   deployment buckets instead of the global Serverless Framework SSM parameter.
+- Aligned the Data Platform stack names with the existing CloudFormation
+  stacks and IoT state-machine exports.
+- Aligned QuickSight dataset columns with the lowercase Glue Catalog schema.
 - Optional QuickSight Athena data source and historical/IoT Gold datasets,
   disabled by default, plus a dashboard contract for account-specific setup.
 - QuickSight Athena source, DIRECT_QUERY datasets and the development dashboard

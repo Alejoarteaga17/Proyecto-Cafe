@@ -16,9 +16,9 @@ resources:
 
 custom:
   stackName:
-    dev: ${env:DEPLOY_APP, 'coffee-cultivation'}-${self:service}
-    test: ${env:DEPLOY_APP, 'coffee-cultivation'}-${self:service}-test
-    prod: ${env:DEPLOY_APP, 'coffee-cultivation'}-${self:service}-prod
+    dev: ${self:service}-dev
+    test: ${self:service}-test
+    prod: ${self:service}-prod
   storageStackName:
     dev: ${env:DEPLOY_APP, 'coffee-cultivation'}-storage
     test: ${env:DEPLOY_APP, 'coffee-cultivation'}-storage-test
