@@ -60,8 +60,11 @@ Resources:
                   - s3:GetObject
                   - s3:PutObject
                   - s3:DeleteObject
+                  - s3:DeleteBucketPolicy
+                  - s3:GetBucketPolicy
                   - s3:ListBucket
                   - s3:GetBucketLocation
+                  - s3:PutBucketPolicy
                   - s3:PutBucketEncryption
                   - s3:PutBucketPublicAccessBlock
                   - s3:PutBucketVersioning
@@ -88,6 +91,38 @@ Resources:
                 Effect: Allow
                 Action: iam:PassRole
                 Resource: !Sub arn:aws:iam::${AWS::AccountId}:role/coffee-cultivation-*
+              - Sid: ManageProjectResources
+                Effect: Allow
+                Action:
+                  - apigateway:*
+                  - athena:*
+                  - firehose:*
+                  - glue:*
+                  - iam:AttachRolePolicy
+                  - iam:CreateRole
+                  - iam:CreateServiceLinkedRole
+                  - iam:DeleteRole
+                  - iam:DeleteRolePolicy
+                  - iam:DetachRolePolicy
+                  - iam:GetRole
+                  - iam:GetRolePolicy
+                  - iam:ListAttachedRolePolicies
+                  - iam:ListRolePolicies
+                  - iam:PutRolePolicy
+                  - iam:TagRole
+                  - iam:UntagRole
+                  - iot:*
+                  - lambda:*
+                  - logs:*
+                  - quicksight:*
+                  - states:*
+                Resource: "*"
+              - Sid: ManageProjectParameters
+                Effect: Allow
+                Action:
+                  - ssm:DeleteParameter
+                  - ssm:PutParameter
+                Resource: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/coffee-cultivation-*
               - Sid: ReadDeploymentIdentity
                 Effect: Allow
                 Action:
@@ -96,9 +131,7 @@ Resources:
               - Sid: PublishFrontend
                 Effect: Allow
                 Action:
-                  - cloudfront:CreateInvalidation
-                  - cloudfront:GetDistribution
-                  - cloudfront:GetInvalidation
+                  - cloudfront:*
                 Resource: "*"
               - Sid: StartProjectDataOps
                 Effect: Allow
