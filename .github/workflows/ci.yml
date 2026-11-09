@@ -11,6 +11,10 @@ permissions:
 jobs:
   quality:
     runs-on: ubuntu-latest
+    env:
+      AWS_DEFAULT_REGION: us-east-1
+      AWS_REGION: us-east-1
+      AWS_EC2_METADATA_DISABLED: "true"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
